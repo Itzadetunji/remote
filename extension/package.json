@@ -1,0 +1,83 @@
+{
+  "name": "cursor-remote-extension",
+  "displayName": "Cursor Remote",
+  "description": "Pair with iOS and send APNs notifications from Cursor.",
+  "version": "0.0.1",
+  "publisher": "adetunjiadeyinka",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:cursorRemote.startServer",
+    "onCommand:cursorRemote.stopServer",
+    "onCommand:cursorRemote.showPairingQr",
+    "onCommand:cursorRemote.sendTestPush",
+    "onCommand:cursorRemote.checkCdpConnection"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cursorRemote.startServer",
+        "title": "Cursor Remote: Start Server"
+      },
+      {
+        "command": "cursorRemote.stopServer",
+        "title": "Cursor Remote: Stop Server"
+      },
+      {
+        "command": "cursorRemote.showPairingQr",
+        "title": "Cursor Remote: Show Pairing QR"
+      },
+      {
+        "command": "cursorRemote.sendTestPush",
+        "title": "Cursor Remote: Send Test Push"
+      },
+      {
+        "command": "cursorRemote.checkCdpConnection",
+        "title": "Cursor Remote: Check CDP Connection"
+      }
+    ],
+    "configuration": {
+      "title": "Cursor Remote",
+      "properties": {
+        "cursorRemote.serverHost": {
+          "type": "string",
+          "default": "0.0.0.0",
+          "description": "Host binding for the local pairing server."
+        },
+        "cursorRemote.serverPort": {
+          "type": "number",
+          "default": 31337,
+          "description": "Port for the local pairing server."
+        },
+        "cursorRemote.cdpUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:9222",
+          "description": "Cursor CDP base URL. Launch Cursor with --remote-debugging-port=9222."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -w -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.13.8",
+    "@types/qrcode": "^1.5.5",
+    "@types/vscode": "^1.96.0",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "jose": "^5.9.6",
+    "qrcode": "^1.5.4"
+  }
+}

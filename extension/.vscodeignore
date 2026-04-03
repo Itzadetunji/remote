@@ -1,0 +1,7 @@
+src/**
+tsconfig.json
+**/*.map
+**/.DS_Store
+node_modules/.bin/**
+node_modules/**/test/**
+node_modules/**/*.md
