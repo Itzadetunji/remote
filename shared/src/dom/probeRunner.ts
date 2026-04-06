@@ -1,19 +1,27 @@
 import { URL } from "node:url";
 import type { DomSnapshot } from "./types";
 
-type CdpModule = {
-  List: (options: { host: string; port: number; secure: boolean }) => Promise<Array<{ id: string; type: string }>>;
-  default: (options: { host: string; port: number; target: string }) => Promise<{
-    Runtime: {
-      enable: () => Promise<void>;
-      evaluate: (params: {
-        expression: string;
-        returnByValue: boolean;
-        awaitPromise: boolean;
-      }) => Promise<{ result?: { value?: unknown } }>;
-    };
-    close: () => Promise<void>;
-  }>;
+type CdpClient = {
+  Runtime: {
+    enable: () => Promise<void>;
+    evaluate: (params: {
+      expression: string;
+      returnByValue: boolean;
+      awaitPromise: boolean;
+    }) => Promise<{ result?: { value?: unknown } }>;
+  };
+  close: () => Promise<void>;
+};
+
+/** CommonJS export: callable connect + `.List` (no `.default`). */
+type ChromeRemoteInterface = ((
+  options: { host: string; port: number; target: string },
+) => Promise<CdpClient>) & {
+  List: (options: {
+    host: string;
+    port: number;
+    secure: boolean;
+  }) => Promise<Array<{ id: string; type: string }>>;
 };
 
 function parseCdpUrl(cdpUrl: string): { host: string; port: number; secure: boolean } {
@@ -42,14 +50,14 @@ function isSnapshotLike(value: unknown): value is DomSnapshot {
 export async function runDomProbe(cdpUrl: string, expression: string): Promise<DomSnapshot | undefined> {
   const parsed = parseCdpUrl(cdpUrl);
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const CDP = require("chrome-remote-interface") as CdpModule;
+  const CDP = require("chrome-remote-interface") as ChromeRemoteInterface;
   const targets = await CDP.List(parsed);
   const target = targets.find((item) => item.type === "page") ?? targets[0];
   if (!target) {
     return undefined;
   }
 
-  const client = await CDP.default({
+  const client = await CDP({
     host: parsed.host,
     port: parsed.port,
     target: target.id
