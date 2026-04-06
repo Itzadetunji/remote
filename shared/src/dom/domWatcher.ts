@@ -1,6 +1,7 @@
 import { AgentStateMachine } from "./agentStateMachine";
 import { buildDomProbeExpression } from "./probeScript";
 import { runDomProbeOutcome } from "./probeRunner";
+import { makeScopeKey } from "./scopeContext";
 import { DOM_SELECTORS } from "./selectors";
 import type { DomWatcherEvent } from "./types";
 
@@ -21,15 +22,15 @@ export type DomWatcherOptions = {
   domHeartbeatMs?: number;
 };
 
+const MAX_SCOPED_MACHINES = 50;
+
 export function startDomWatcher(options: DomWatcherOptions): () => void {
   if (!options.enabled) {
     return () => {};
   }
 
   const expression = buildDomProbeExpression(DOM_SELECTORS);
-  const machine = new AgentStateMachine({
-    minStableIdleSamples: options.minStableIdleSamples ?? 2
-  });
+  const machines = new Map<string, AgentStateMachine>();
 
   const domTrace = options.domTrace ?? false;
   const domHeartbeatMs = options.domHeartbeatMs ?? 20_000;
@@ -37,6 +38,7 @@ export function startDomWatcher(options: DomWatcherOptions): () => void {
   let lastFailureLogAt = 0;
   let consecutiveFailures = 0;
   let firstOkProbeLogged = false;
+  let lastScopeKey: string | undefined;
 
   const tick = async (): Promise<void> => {
     const outcome = await runDomProbeOutcome(options.getCdpUrl(), expression);
@@ -66,13 +68,36 @@ export function startDomWatcher(options: DomWatcherOptions): () => void {
 
     consecutiveFailures = 0;
 
-    const snapshot = outcome.snapshot;
+    const { snapshot, scope } = outcome;
+    const scopeKey = makeScopeKey(scope);
+
+    if (scopeKey !== lastScopeKey) {
+      options.log?.(
+        `[taskFinish] scope changed ${lastScopeKey ?? "∅"} → ${scopeKey} target=${scope.targetId.slice(0, 8)}… tab="${scope.tabTitle ?? "?"}" composer=${scope.composerId || "unknown"}`
+      );
+      lastScopeKey = scopeKey;
+    }
+
     if (!firstOkProbeLogged) {
       firstOkProbeLogged = true;
       lastHeartbeatLogAt = now;
       options.log?.(
-        `[taskFinish] first probe ok phase=${snapshot.phase} hasStop=${snapshot.hasStop} hasMic=${snapshot.hasMic} hasSend=${snapshot.hasSend} (if phase stays unavailable/ambiguous, update DOM selectors)`
+        `[taskFinish] first probe ok scope=${scopeKey} phase=${snapshot.phase} hasStop=${snapshot.hasStop} hasMic=${snapshot.hasMic} hasSend=${snapshot.hasSend} (if phase stays unavailable/ambiguous, update DOM selectors)`
       );
+    }
+
+    let machine = machines.get(scopeKey);
+    if (!machine) {
+      if (machines.size >= MAX_SCOPED_MACHINES) {
+        const first = machines.keys().next().value;
+        if (first) {
+          machines.delete(first);
+        }
+      }
+      machine = new AgentStateMachine({
+        minStableIdleSamples: options.minStableIdleSamples ?? 2
+      });
+      machines.set(scopeKey, machine);
     }
 
     const events = machine.consume(snapshot);
@@ -81,7 +106,7 @@ export function startDomWatcher(options: DomWatcherOptions): () => void {
     if (domTrace) {
       const evNames = events.map((e) => e.type).join(",") || "none";
       options.log?.(
-        `[taskFinish] domTrace phase=${snapshot.phase} hasStop=${snapshot.hasStop} hasMic=${snapshot.hasMic} hasSend=${snapshot.hasSend} lastStable=${dbg.lastStablePhase ?? "∅"} idleCount=${dbg.idleStableCount} events=${evNames}`
+        `[taskFinish] domTrace scope=${scopeKey} phase=${snapshot.phase} hasStop=${snapshot.hasStop} hasMic=${snapshot.hasMic} hasSend=${snapshot.hasSend} lastStable=${dbg.lastStablePhase ?? "∅"} idleCount=${dbg.idleStableCount} events=${evNames}`
       );
     } else if (
       domHeartbeatMs > 0 &&
@@ -90,12 +115,13 @@ export function startDomWatcher(options: DomWatcherOptions): () => void {
       lastHeartbeatLogAt = now;
       const evNames = events.map((e) => e.type).join(",") || "none";
       options.log?.(
-        `[taskFinish] heartbeat phase=${snapshot.phase} hasStop=${snapshot.hasStop} hasMic=${snapshot.hasMic} hasSend=${snapshot.hasSend} lastStable=${dbg.lastStablePhase ?? "∅"} idleCount=${dbg.idleStableCount} events=${evNames} (taskFinished after running→idle×${options.minStableIdleSamples ?? 2})`
+        `[taskFinish] heartbeat scope=${scopeKey} phase=${snapshot.phase} hasStop=${snapshot.hasStop} hasMic=${snapshot.hasMic} hasSend=${snapshot.hasSend} lastStable=${dbg.lastStablePhase ?? "∅"} idleCount=${dbg.idleStableCount} events=${evNames} (taskFinished after running→idle×${options.minStableIdleSamples ?? 2})`
       );
     }
 
-    for (const event of events) {
-      options.onEvent?.(event);
+    for (const ev of events) {
+      const full: DomWatcherEvent = { ...ev, scope };
+      options.onEvent?.(full);
     }
   };
 

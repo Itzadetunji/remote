@@ -1,5 +1,5 @@
 import { URL } from "node:url";
-import type { DomSnapshot } from "./types";
+import type { DomScope, DomSnapshot } from "./types";
 
 type CdpClient = {
   Runtime: {
@@ -33,18 +33,27 @@ function parseCdpUrl(cdpUrl: string): { host: string; port: number; secure: bool
   };
 }
 
-function isSnapshotLike(value: unknown): value is DomSnapshot {
+function isProbeResultLike(value: unknown): value is DomSnapshot {
   if (!value || typeof value !== "object") {
     return false;
   }
   const candidate = value as Partial<DomSnapshot>;
-  return (
-    typeof candidate.phase === "string" &&
-    typeof candidate.hasStop === "boolean" &&
-    typeof candidate.hasMic === "boolean" &&
-    typeof candidate.hasSend === "boolean" &&
-    typeof candidate.seenAt === "number"
-  );
+  if (
+    typeof candidate.phase !== "string" ||
+    typeof candidate.hasStop !== "boolean" ||
+    typeof candidate.hasMic !== "boolean" ||
+    typeof candidate.hasSend !== "boolean" ||
+    typeof candidate.seenAt !== "number"
+  ) {
+    return false;
+  }
+  if (candidate.composerId !== undefined && typeof candidate.composerId !== "string") {
+    return false;
+  }
+  if (candidate.tabTitle !== undefined && typeof candidate.tabTitle !== "string") {
+    return false;
+  }
+  return true;
 }
 
 export type DomProbeFailureReason =
@@ -54,7 +63,7 @@ export type DomProbeFailureReason =
   | "cdp_error";
 
 export type DomProbeOutcome =
-  | { ok: true; snapshot: DomSnapshot }
+  | { ok: true; snapshot: DomSnapshot; scope: DomScope }
   | { ok: false; reason: DomProbeFailureReason; detail?: string };
 
 /**
@@ -91,14 +100,22 @@ export async function runDomProbeOutcome(
         awaitPromise: false
       });
       const value = evaluated.result?.value;
-      if (!isSnapshotLike(value)) {
+      if (!isProbeResultLike(value)) {
         return {
           ok: false,
           reason: "invalid_result",
           detail: value === undefined ? "evaluate returned undefined" : "evaluate did not return a DomSnapshot shape"
         };
       }
-      return { ok: true, snapshot: value };
+      const snapshot = value as DomSnapshot;
+      const composerId = snapshot.composerId?.trim() ?? "";
+      const tabRaw = snapshot.tabTitle?.trim() ?? "";
+      const scope: DomScope = {
+        targetId: target.id,
+        composerId,
+        tabTitle: tabRaw.length > 0 ? tabRaw : undefined
+      };
+      return { ok: true, snapshot, scope };
     } finally {
       await client.close();
     }

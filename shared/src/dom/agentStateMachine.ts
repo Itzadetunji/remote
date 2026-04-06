@@ -1,8 +1,13 @@
-import type { DomSnapshot, DomWatcherEvent } from "./types";
+import type { DomSnapshot } from "./types";
 
 export type AgentStateMachineOptions = {
   minStableIdleSamples: number;
 };
+
+/** Transitions before attaching CDP/tab scope in the watcher. */
+export type AgentTransitionEvent =
+  | { type: "taskStarted"; snapshot: DomSnapshot }
+  | { type: "taskFinished"; snapshot: DomSnapshot };
 
 /**
  * Turns raw DOM snapshots into durable state transitions.
@@ -28,8 +33,8 @@ export class AgentStateMachine {
     };
   }
 
-  public consume(snapshot: DomSnapshot): DomWatcherEvent[] {
-    const events: DomWatcherEvent[] = [];
+  public consume(snapshot: DomSnapshot): AgentTransitionEvent[] {
+    const events: AgentTransitionEvent[] = [];
 
     if (snapshot.phase === "running") {
       this.idleStableCount = 0;

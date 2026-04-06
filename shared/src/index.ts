@@ -5,6 +5,7 @@ export * from "./dom/agentStateMachine";
 export * from "./dom/domWatcher";
 export * from "./dom/probeRunner";
 export * from "./dom/probeScript";
+export * from "./dom/scopeContext";
 export * from "./dom/selectors";
 export * from "./dom/types";
 export * from "./services/pairingServer";

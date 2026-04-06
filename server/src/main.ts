@@ -1,4 +1,8 @@
-import { PairingServer, startDomWatcher } from "@cursorremote/shared";
+import {
+	makeScopeKey,
+	PairingServer,
+	startDomWatcher,
+} from "@cursorremote/shared";
 import {
 	notifyTaskFinished,
 	sendTestPush,
@@ -74,7 +78,8 @@ export async function main(): Promise<void> {
 		);
 	}
 
-	let lastTaskFinishPushAt = 0;
+	/** Last notify time per CDP target + composer (tab), so cooldown does not cross tabs. */
+	const lastTaskFinishPushByScope = new Map<string, number>();
 
 	const stopDomWatcher = startDomWatcher({
 		enabled: env.notifyOnAgentIdle,
@@ -85,10 +90,13 @@ export async function main(): Promise<void> {
 		domTrace: env.domTrace,
 		domHeartbeatMs: env.domHeartbeatMs,
 		onEvent: (event) => {
+			const sc = event.scope;
+			const scopeLabel = `${sc.targetId.slice(0, 8)}…/${sc.composerId || "unknown"}`;
+
 			if (event.type === "taskStarted") {
 				const s = event.snapshot;
 				log(
-					`[taskFinish] taskStarted (agent looks running) seenAt=${s.seenAt} phase=${s.phase} hasStop=${s.hasStop} hasMic=${s.hasMic} hasSend=${s.hasSend}`,
+					`[taskFinish] taskStarted scope=${scopeLabel} tab="${sc.tabTitle ?? "?"}" seenAt=${s.seenAt} phase=${s.phase} hasStop=${s.hasStop} hasMic=${s.hasMic} hasSend=${s.hasSend}`,
 				);
 				return;
 			}
@@ -100,21 +108,23 @@ export async function main(): Promise<void> {
 			const s = event.snapshot;
 			const iso = new Date().toISOString();
 			log(
-				`[taskFinish] taskFinished event at=${iso} seenAt=${s.seenAt} phase=${s.phase} hasStop=${s.hasStop} hasMic=${s.hasMic} hasSend=${s.hasSend} minStableIdleSamples=${minStableIdleSamples}`,
+				`[taskFinish] taskFinished scope=${scopeLabel} tab="${sc.tabTitle ?? "?"}" at=${iso} seenAt=${s.seenAt} phase=${s.phase} hasStop=${s.hasStop} hasMic=${s.hasMic} hasSend=${s.hasSend} minStableIdleSamples=${minStableIdleSamples}`,
 			);
 
 			const now = Date.now();
-			const elapsedSinceLastPush = now - lastTaskFinishPushAt;
+			const scopeKey = makeScopeKey(event.scope);
+			const lastForScope = lastTaskFinishPushByScope.get(scopeKey) ?? 0;
+			const elapsedSinceLastPush = now - lastForScope;
 			if (elapsedSinceLastPush < env.taskFinishCooldownMs) {
 				log(
-					`[taskFinish] push suppressed: cooldown elapsedMs=${elapsedSinceLastPush} need>=${env.taskFinishCooldownMs}ms (set CURSOR_REMOTE_TASK_FINISH_COOLDOWN_MS to change)`,
+					`[taskFinish] push suppressed: cooldown for this tab scope=${scopeKey} elapsedMs=${elapsedSinceLastPush} need>=${env.taskFinishCooldownMs}ms`,
 				);
 				return;
 			}
 
 			const deviceCount = getContext().server.listDevices().length;
 			log(
-				`[taskFinish] proceeding: pairedDevices=${deviceCount} cdpUrl=${env.cdpUrl} pollMs=${env.pollMs}`,
+				`[taskFinish] proceeding: pairedDevices=${deviceCount} scope=${scopeKey} cdpUrl=${env.cdpUrl} pollMs=${env.pollMs}`,
 			);
 
 			if (deviceCount === 0) {
@@ -123,7 +133,7 @@ export async function main(): Promise<void> {
 				);
 			}
 
-			lastTaskFinishPushAt = now;
+			lastTaskFinishPushByScope.set(scopeKey, now);
 			void notifyTaskFinished(getContext())
 				.then((result) => {
 					log(
