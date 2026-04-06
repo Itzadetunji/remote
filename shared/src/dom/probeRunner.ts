@@ -47,35 +47,68 @@ function isSnapshotLike(value: unknown): value is DomSnapshot {
   );
 }
 
-export async function runDomProbe(cdpUrl: string, expression: string): Promise<DomSnapshot | undefined> {
+export type DomProbeFailureReason =
+  | "no_targets"
+  | "no_page_target"
+  | "invalid_result"
+  | "cdp_error";
+
+export type DomProbeOutcome =
+  | { ok: true; snapshot: DomSnapshot }
+  | { ok: false; reason: DomProbeFailureReason; detail?: string };
+
+/**
+ * Runs the probe and returns whether the snapshot is usable, or why not (for debugging).
+ */
+export async function runDomProbeOutcome(
+  cdpUrl: string,
+  expression: string
+): Promise<DomProbeOutcome> {
   const parsed = parseCdpUrl(cdpUrl);
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const CDP = require("chrome-remote-interface") as ChromeRemoteInterface;
-  const targets = await CDP.List(parsed);
-  const target = targets.find((item) => item.type === "page") ?? targets[0];
-  if (!target) {
-    return undefined;
-  }
-
-  const client = await CDP({
-    host: parsed.host,
-    port: parsed.port,
-    target: target.id
-  });
-
   try {
-    await client.Runtime.enable();
-    const evaluated = await client.Runtime.evaluate({
-      expression,
-      returnByValue: true,
-      awaitPromise: false
-    });
-    const value = evaluated.result?.value;
-    if (!isSnapshotLike(value)) {
-      return undefined;
+    const targets = await CDP.List(parsed);
+    if (!targets.length) {
+      return { ok: false, reason: "no_targets" };
     }
-    return value;
-  } finally {
-    await client.close();
+    const target = targets.find((item) => item.type === "page") ?? targets[0];
+    if (!target) {
+      return { ok: false, reason: "no_page_target" };
+    }
+
+    const client = await CDP({
+      host: parsed.host,
+      port: parsed.port,
+      target: target.id
+    });
+
+    try {
+      await client.Runtime.enable();
+      const evaluated = await client.Runtime.evaluate({
+        expression,
+        returnByValue: true,
+        awaitPromise: false
+      });
+      const value = evaluated.result?.value;
+      if (!isSnapshotLike(value)) {
+        return {
+          ok: false,
+          reason: "invalid_result",
+          detail: value === undefined ? "evaluate returned undefined" : "evaluate did not return a DomSnapshot shape"
+        };
+      }
+      return { ok: true, snapshot: value };
+    } finally {
+      await client.close();
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    return { ok: false, reason: "cdp_error", detail: msg };
   }
+}
+
+export async function runDomProbe(cdpUrl: string, expression: string): Promise<DomSnapshot | undefined> {
+  const outcome = await runDomProbeOutcome(cdpUrl, expression);
+  return outcome.ok ? outcome.snapshot : undefined;
 }

@@ -17,6 +17,17 @@ export class AgentStateMachine {
     this.options = options;
   }
 
+  /** For debugging: why taskFinished may not fire yet. */
+  public getDebugState(): {
+    lastStablePhase: DomSnapshot["phase"] | undefined;
+    idleStableCount: number;
+  } {
+    return {
+      lastStablePhase: this.lastStablePhase,
+      idleStableCount: this.idleStableCount
+    };
+  }
+
   public consume(snapshot: DomSnapshot): DomWatcherEvent[] {
     const events: DomWatcherEvent[] = [];
 

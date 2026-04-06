@@ -1,6 +1,6 @@
 import { AgentStateMachine } from "./agentStateMachine";
 import { buildDomProbeExpression } from "./probeScript";
-import { runDomProbe } from "./probeRunner";
+import { runDomProbeOutcome } from "./probeRunner";
 import { DOM_SELECTORS } from "./selectors";
 import type { DomWatcherEvent } from "./types";
 
@@ -11,6 +11,14 @@ export type DomWatcherOptions = {
   enabled: boolean;
   minStableIdleSamples?: number;
   onEvent?: (event: DomWatcherEvent) => void;
+  /**
+   * Log every poll with phase + state machine (verbose). Env: CURSOR_REMOTE_DOM_TRACE=true
+   */
+  domTrace?: boolean;
+  /**
+   * Log a summary line every N ms when domTrace is false (0 = off). Default 20000.
+   */
+  domHeartbeatMs?: number;
 };
 
 export function startDomWatcher(options: DomWatcherOptions): () => void {
@@ -23,21 +31,69 @@ export function startDomWatcher(options: DomWatcherOptions): () => void {
     minStableIdleSamples: options.minStableIdleSamples ?? 2
   });
 
+  const domTrace = options.domTrace ?? false;
+  const domHeartbeatMs = options.domHeartbeatMs ?? 20_000;
+  let lastHeartbeatLogAt = 0;
+  let lastFailureLogAt = 0;
+  let consecutiveFailures = 0;
+  let firstOkProbeLogged = false;
+
   const tick = async (): Promise<void> => {
-    let snapshot;
-    try {
-      snapshot = await runDomProbe(options.getCdpUrl(), expression);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      options.log?.(`[Cursor Remote] DOM watcher tick failed: ${message}`);
+    const outcome = await runDomProbeOutcome(options.getCdpUrl(), expression);
+    const now = Date.now();
+
+    if (!outcome.ok) {
+      consecutiveFailures += 1;
+      const detail = outcome.detail ? ` detail=${outcome.detail}` : "";
+      if (domTrace) {
+        options.log?.(
+          `[taskFinish] domTrace probe failed reason=${outcome.reason}${detail}`
+        );
+      } else {
+        const shouldLogFailure =
+          consecutiveFailures === 1 ||
+          (domHeartbeatMs > 0 &&
+            now - lastFailureLogAt >= domHeartbeatMs);
+        if (shouldLogFailure) {
+          lastFailureLogAt = now;
+          options.log?.(
+            `[taskFinish] domProbe failed reason=${outcome.reason}${detail} — check: Cursor launched with --remote-debugging-port, chat panel open, selectors in shared/src/dom/selectors.ts`
+          );
+        }
+      }
       return;
     }
 
-    if (!snapshot) {
-      return;
+    consecutiveFailures = 0;
+
+    const snapshot = outcome.snapshot;
+    if (!firstOkProbeLogged) {
+      firstOkProbeLogged = true;
+      lastHeartbeatLogAt = now;
+      options.log?.(
+        `[taskFinish] first probe ok phase=${snapshot.phase} hasStop=${snapshot.hasStop} hasMic=${snapshot.hasMic} hasSend=${snapshot.hasSend} (if phase stays unavailable/ambiguous, update DOM selectors)`
+      );
     }
 
     const events = machine.consume(snapshot);
+    const dbg = machine.getDebugState();
+
+    if (domTrace) {
+      const evNames = events.map((e) => e.type).join(",") || "none";
+      options.log?.(
+        `[taskFinish] domTrace phase=${snapshot.phase} hasStop=${snapshot.hasStop} hasMic=${snapshot.hasMic} hasSend=${snapshot.hasSend} lastStable=${dbg.lastStablePhase ?? "∅"} idleCount=${dbg.idleStableCount} events=${evNames}`
+      );
+    } else if (
+      domHeartbeatMs > 0 &&
+      now - lastHeartbeatLogAt >= domHeartbeatMs
+    ) {
+      lastHeartbeatLogAt = now;
+      const evNames = events.map((e) => e.type).join(",") || "none";
+      options.log?.(
+        `[taskFinish] heartbeat phase=${snapshot.phase} hasStop=${snapshot.hasStop} hasMic=${snapshot.hasMic} hasSend=${snapshot.hasSend} lastStable=${dbg.lastStablePhase ?? "∅"} idleCount=${dbg.idleStableCount} events=${evNames} (taskFinished after running→idle×${options.minStableIdleSamples ?? 2})`
+      );
+    }
+
     for (const event of events) {
       options.onEvent?.(event);
     }

@@ -1,5 +1,9 @@
 import { PairingServer, startDomWatcher } from "@cursorremote/shared";
-import { sendTestPush, type ServerContext } from "./commands/handlers";
+import {
+	notifyTaskFinished,
+	sendTestPush,
+	type ServerContext,
+} from "./commands/handlers";
 import { attachKeyboardHandlers } from "./cli/keyboard";
 import { loadEnvConfig } from "./config";
 import { createRegisterRoutes } from "./http/routes";
@@ -59,17 +63,77 @@ export async function main(): Promise<void> {
 	log(`Service listening (bind ${env.host}:${server.getPort()})`);
 	printHelp();
 
+	const minStableIdleSamples = 2;
+	if (!env.notifyOnAgentIdle) {
+		log(
+			"[taskFinish] DOM watcher disabled — no task-finish pushes (set CURSOR_REMOTE_NOTIFY_ON_AGENT_IDLE=true or use Cursor Remote settings)",
+		);
+	} else {
+		log(
+			`[taskFinish] DOM watcher enabled cdpUrl=${env.cdpUrl} pollMs=${env.pollMs} minStableIdleSamples=${minStableIdleSamples} cooldownMs=${env.taskFinishCooldownMs} domTrace=${env.domTrace} domHeartbeatMs=${env.domHeartbeatMs}`,
+		);
+	}
+
+	let lastTaskFinishPushAt = 0;
+
 	const stopDomWatcher = startDomWatcher({
 		enabled: env.notifyOnAgentIdle,
 		pollMs: env.pollMs,
 		getCdpUrl: () => env.cdpUrl,
 		log,
-		minStableIdleSamples: 2,
+		minStableIdleSamples,
+		domTrace: env.domTrace,
+		domHeartbeatMs: env.domHeartbeatMs,
 		onEvent: (event) => {
-			if (event.type === "taskFinished") {
-				log("Detected taskFinished transition; sending push.");
-				void sendTestPush(getContext(), "Agent task finished in Cursor.");
+			if (event.type === "taskStarted") {
+				const s = event.snapshot;
+				log(
+					`[taskFinish] taskStarted (agent looks running) seenAt=${s.seenAt} phase=${s.phase} hasStop=${s.hasStop} hasMic=${s.hasMic} hasSend=${s.hasSend}`,
+				);
+				return;
 			}
+
+			if (event.type !== "taskFinished") {
+				return;
+			}
+
+			const s = event.snapshot;
+			const iso = new Date().toISOString();
+			log(
+				`[taskFinish] taskFinished event at=${iso} seenAt=${s.seenAt} phase=${s.phase} hasStop=${s.hasStop} hasMic=${s.hasMic} hasSend=${s.hasSend} minStableIdleSamples=${minStableIdleSamples}`,
+			);
+
+			const now = Date.now();
+			const elapsedSinceLastPush = now - lastTaskFinishPushAt;
+			if (elapsedSinceLastPush < env.taskFinishCooldownMs) {
+				log(
+					`[taskFinish] push suppressed: cooldown elapsedMs=${elapsedSinceLastPush} need>=${env.taskFinishCooldownMs}ms (set CURSOR_REMOTE_TASK_FINISH_COOLDOWN_MS to change)`,
+				);
+				return;
+			}
+
+			const deviceCount = getContext().server.listDevices().length;
+			log(
+				`[taskFinish] proceeding: pairedDevices=${deviceCount} cdpUrl=${env.cdpUrl} pollMs=${env.pollMs}`,
+			);
+
+			if (deviceCount === 0) {
+				log(
+					"[taskFinish] no paired devices — push will no-op (pair the iOS app first)",
+				);
+			}
+
+			lastTaskFinishPushAt = now;
+			void notifyTaskFinished(getContext())
+				.then((result) => {
+					log(
+						`[taskFinish] notifyTaskFinished done sent=${result.sent} failed=${result.failed}`,
+					);
+				})
+				.catch((err: unknown) => {
+					const msg = err instanceof Error ? err.message : String(err);
+					log(`[taskFinish] notifyTaskFinished error: ${msg}`);
+				});
 		},
 	});
 

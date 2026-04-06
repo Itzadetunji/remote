@@ -41,6 +41,24 @@ function getAutoStartService(): boolean {
 		.get<boolean>("autoStartService", true);
 }
 
+/** Env passed to the spawned Node process so the service matches extension settings (CDP, DOM watcher). */
+function getServiceEnvForSpawn(): NodeJS.ProcessEnv {
+	const config = vscode.workspace.getConfiguration("cursorRemote");
+	const cdpUrl = config.get<string>("cdpUrl", "http://127.0.0.1:9222");
+	const notifyOnAgentIdle = config.get<boolean>("notifyOnAgentIdle", true);
+	const agentIdlePollMs = config.get<number>("agentIdlePollMs", 500);
+	const domTrace = config.get<boolean>("domTrace", false);
+	const domHeartbeatMs = config.get<number>("domHeartbeatMs", 20_000);
+	return {
+		...process.env,
+		CURSOR_REMOTE_CDP_URL: cdpUrl,
+		CURSOR_REMOTE_NOTIFY_ON_AGENT_IDLE: notifyOnAgentIdle ? "true" : "false",
+		CURSOR_REMOTE_AGENT_IDLE_POLL_MS: String(agentIdlePollMs),
+		CURSOR_REMOTE_DOM_TRACE: domTrace ? "true" : "false",
+		CURSOR_REMOTE_DOM_HEARTBEAT_MS: String(domHeartbeatMs),
+	};
+}
+
 async function startService(
 	context: vscode.ExtensionContext,
 	output: vscode.OutputChannel,
@@ -62,6 +80,7 @@ async function startService(
 		const child = spawn(process.execPath, [entry], {
 			cwd: path.dirname(entry),
 			stdio: "pipe",
+			env: getServiceEnvForSpawn(),
 		});
 		state.serviceProcess = child;
 		child.stdout.on("data", (chunk) => output.append(chunk.toString()));
