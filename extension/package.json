@@ -12,6 +12,7 @@
   ],
   "activationEvents": [
     "onStartupFinished",
+    "onView:cursorRemoteConnectionStatus",
     "onCommand:cursorRemote.startServer",
     "onCommand:cursorRemote.stopServer",
     "onCommand:cursorRemote.showPairingQr",
@@ -42,6 +43,25 @@
         "title": "Cursor Remote: Check CDP Connection"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cursorRemote",
+          "title": "Cursor Remote",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "cursorRemote": [
+        {
+          "type": "webview",
+          "id": "cursorRemoteConnectionStatus",
+          "name": "Connection",
+          "contextualTitle": "CDP connection"
+        }
+      ]
+    },
     "configuration": {
       "title": "Cursor Remote",
       "properties": {

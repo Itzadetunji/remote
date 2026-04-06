@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { PairingServer } from "./server";
 import { checkCdpConnection } from "./cdp";
 import { getBuiltInApnsSettings, sendApnsPush } from "./apns";
+import { ConnectionStatusViewProvider } from "./connectionView";
 
 const PAIRING_TOKEN_SECRET = "cursorRemote.pairingToken";
 
@@ -57,6 +58,13 @@ async function stopServer(output: vscode.OutputChannel): Promise<void> {
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const output = vscode.window.createOutputChannel("Cursor Remote");
   context.subscriptions.push(output);
+
+  const connectionView = new ConnectionStatusViewProvider(context);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(ConnectionStatusViewProvider.viewId, connectionView, {
+      webviewOptions: { retainContextWhenHidden: true }
+    })
+  );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("cursorRemote.startServer", async () => {
