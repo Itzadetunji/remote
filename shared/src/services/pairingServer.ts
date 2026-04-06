@@ -1,4 +1,4 @@
-import express, { type Request } from "express";
+import express, { type Express, type Request } from "express";
 import { networkInterfaces } from "node:os";
 import { type AddressInfo } from "node:net";
 import { createServer, type Server as HttpServer } from "node:http";
@@ -15,6 +15,8 @@ export interface PairingServerOptions {
 	pairingToken: string;
 	/** Called when a **new** device token registers (not on every re-POST). */
 	onDeviceRegistered?: (device: RegisteredDevice) => void;
+	/** Optional hook for host-specific routes (commands, status, etc.). */
+	registerRoutes?: (app: Express, server: PairingServer) => void;
 }
 
 function getBearerToken(request: Request): string | undefined {
@@ -52,6 +54,7 @@ export class PairingServer {
 		this.options = options;
 		this.app.use(express.json());
 		this.registerRoutes();
+		this.options.registerRoutes?.(this.app, this);
 	}
 
 	public getPort(): number {

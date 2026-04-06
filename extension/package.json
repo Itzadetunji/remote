@@ -68,12 +68,27 @@
         "cursorRemote.serverHost": {
           "type": "string",
           "default": "0.0.0.0",
-          "description": "Host binding for the local pairing server."
+          "description": "Host binding for the standalone service (for reference)."
         },
         "cursorRemote.serverPort": {
           "type": "number",
           "default": 31337,
-          "description": "Port for the local pairing server."
+          "description": "Port for the standalone service (for reference)."
+        },
+        "cursorRemote.serviceUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:31337",
+          "description": "Base URL for the standalone cursor-remote service."
+        },
+        "cursorRemote.serviceEntryPath": {
+          "type": "string",
+          "default": "../server/dist/index.js",
+          "description": "Path to service entry script, resolved from workspace root (or extension folder if no workspace)."
+        },
+        "cursorRemote.autoStartService": {
+          "type": "boolean",
+          "default": true,
+          "description": "When true, starts the standalone service on extension activation if it is not already reachable at serviceUrl."
         },
         "cursorRemote.cdpUrl": {
           "type": "string",
@@ -94,7 +109,7 @@
     }
   },
   "scripts": {
-    "compile": "tsc -p ./",
+    "compile": "npm --prefix ../shared run build && tsc -p ./",
     "watch": "tsc -w -p ./",
     "package": "vsce package"
   },
@@ -106,9 +121,7 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "chrome-remote-interface": "^0.33.3",
-    "express": "^4.21.2",
-    "jose": "^5.9.6",
+    "@cursorremote/shared": "file:../shared",
     "qrcode": "^1.5.4"
   }
 }

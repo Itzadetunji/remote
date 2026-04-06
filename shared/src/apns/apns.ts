@@ -43,8 +43,8 @@ export interface PushResult {
 async function loadApnsPrivateKey(
 	settings: ApnsSettings,
 	secrets: {
-		get(key: string): Thenable<string | undefined>;
-		store(key: string, value: string): Thenable<void>;
+		get(key: string): PromiseLike<string | undefined>;
+		store(key: string, value: string): PromiseLike<void>;
 	},
 ): Promise<string> {
 	const secretKeyName = "cursorRemote.apns.authKey";
@@ -74,8 +74,8 @@ async function buildJwtToken(
 export async function sendApnsPush(
 	settings: ApnsSettings,
 	secrets: {
-		get(key: string): Thenable<string | undefined>;
-		store(key: string, value: string): Thenable<void>;
+		get(key: string): PromiseLike<string | undefined>;
+		store(key: string, value: string): PromiseLike<void>;
 	},
 	deviceToken: string,
 	message: PushPayloadInput,
