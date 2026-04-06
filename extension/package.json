@@ -79,6 +79,16 @@
           "type": "string",
           "default": "http://127.0.0.1:9222",
           "description": "Cursor CDP base URL. Launch Cursor with --remote-debugging-port=9222."
+        },
+        "cursorRemote.notifyOnAgentIdle": {
+          "type": "boolean",
+          "default": true,
+          "description": "When true, polls CDP and notifies paired devices when a running agent task appears to finish (heuristic; may need tuning)."
+        },
+        "cursorRemote.agentIdlePollMs": {
+          "type": "number",
+          "default": 8000,
+          "description": "How often to probe the workbench for agent busy/idle (milliseconds)."
         }
       }
     }
@@ -96,6 +106,7 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
+    "chrome-remote-interface": "^0.33.3",
     "express": "^4.21.2",
     "jose": "^5.9.6",
     "qrcode": "^1.5.4"

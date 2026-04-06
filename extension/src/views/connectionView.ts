@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { checkCdpConnection } from "./cdp";
+import { checkCdpConnection } from "../cdp/cdp";
 
 /** Restart Cursor with remote debugging (macOS Terminal). Shown when CDP is offline. */
 const MAC_RESTART_CDP_SCRIPT = `DEBUG_PORT=9222
