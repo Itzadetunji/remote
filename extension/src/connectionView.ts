@@ -234,7 +234,7 @@ export class ConnectionStatusViewProvider
           indicator.innerHTML = checkSvg;
           text.textContent = 'CDP connected';
           detail.textContent = msg.detail || '';
-          offlineHelp.style.display = 'block';
+          offlineHelp.style.display = 'none';
         } else {
           indicator.innerHTML = crossSvg;
           text.textContent = 'CDP offline';
