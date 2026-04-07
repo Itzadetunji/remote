@@ -7,19 +7,19 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		C482437B2F7FF83C00DF2E01 /* cursor remote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "cursor remote.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C47C38BB2F854807003417CC /* cursor-remote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "cursor-remote.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		C482437D2F7FF83C00DF2E01 /* cursor remote */ = {
+		C47C38BD2F854807003417CC /* cursor-remote */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "cursor remote";
+			path = "cursor-remote";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		C48243782F7FF83C00DF2E01 /* Frameworks */ = {
+		C47C38B82F854807003417CC /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -29,18 +29,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		C48243722F7FF83C00DF2E01 = {
+		C47C38B22F854807003417CC = {
 			isa = PBXGroup;
 			children = (
-				C482437D2F7FF83C00DF2E01 /* cursor remote */,
-				C482437C2F7FF83C00DF2E01 /* Products */,
+				C47C38BD2F854807003417CC /* cursor-remote */,
+				C47C38BC2F854807003417CC /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		C482437C2F7FF83C00DF2E01 /* Products */ = {
+		C47C38BC2F854807003417CC /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				C482437B2F7FF83C00DF2E01 /* cursor remote.app */,
+				C47C38BB2F854807003417CC /* cursor-remote.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,64 +48,64 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		C482437A2F7FF83C00DF2E01 /* cursor remote */ = {
+		C47C38BA2F854807003417CC /* cursor-remote */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C48243882F7FF83E00DF2E01 /* Build configuration list for PBXNativeTarget "cursor remote" */;
+			buildConfigurationList = C47C38C82F854808003417CC /* Build configuration list for PBXNativeTarget "cursor-remote" */;
 			buildPhases = (
-				C48243772F7FF83C00DF2E01 /* Sources */,
-				C48243782F7FF83C00DF2E01 /* Frameworks */,
-				C48243792F7FF83C00DF2E01 /* Resources */,
+				C47C38B72F854807003417CC /* Sources */,
+				C47C38B82F854807003417CC /* Frameworks */,
+				C47C38B92F854807003417CC /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				C482437D2F7FF83C00DF2E01 /* cursor remote */,
+				C47C38BD2F854807003417CC /* cursor-remote */,
 			);
-			name = "cursor remote";
+			name = "cursor-remote";
 			packageProductDependencies = (
 			);
-			productName = "cursor remote";
-			productReference = C482437B2F7FF83C00DF2E01 /* cursor remote.app */;
+			productName = "cursor-remote";
+			productReference = C47C38BB2F854807003417CC /* cursor-remote.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		C48243732F7FF83C00DF2E01 /* Project object */ = {
+		C47C38B32F854807003417CC /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2610;
 				LastUpgradeCheck = 2610;
 				TargetAttributes = {
-					C482437A2F7FF83C00DF2E01 = {
+					C47C38BA2F854807003417CC = {
 						CreatedOnToolsVersion = 26.1.1;
 					};
 				};
 			};
-			buildConfigurationList = C48243762F7FF83C00DF2E01 /* Build configuration list for PBXProject "cursor remote" */;
+			buildConfigurationList = C47C38B62F854807003417CC /* Build configuration list for PBXProject "cursor-remote" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
 			);
-			mainGroup = C48243722F7FF83C00DF2E01;
+			mainGroup = C47C38B22F854807003417CC;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = C482437C2F7FF83C00DF2E01 /* Products */;
+			productRefGroup = C47C38BC2F854807003417CC /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				C482437A2F7FF83C00DF2E01 /* cursor remote */,
+				C47C38BA2F854807003417CC /* cursor-remote */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		C48243792F7FF83C00DF2E01 /* Resources */ = {
+		C47C38B92F854807003417CC /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -115,7 +115,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		C48243772F7FF83C00DF2E01 /* Sources */ = {
+		C47C38B72F854807003417CC /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -125,7 +125,7 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		C48243862F7FF83E00DF2E01 /* Debug */ = {
+		C47C38C62F854808003417CC /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -189,7 +189,7 @@
 			};
 			name = Debug;
 		};
-		C48243872F7FF83E00DF2E01 /* Release */ = {
+		C47C38C72F854808003417CC /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -246,18 +246,16 @@
 			};
 			name = Release;
 		};
-		C48243892F7FF83E00DF2E01 /* Debug */ = {
+		C47C38C92F854808003417CC /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "cursor remote/cursor_remote.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 4BMQZQ7YSK;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Scan a pairing QR code from Cursor Remote.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -280,18 +278,16 @@
 			};
 			name = Debug;
 		};
-		C482438A2F7FF83E00DF2E01 /* Release */ = {
+		C47C38CA2F854808003417CC /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "cursor remote/cursor_remote.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 4BMQZQ7YSK;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Scan a pairing QR code from Cursor Remote.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -317,25 +313,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		C48243762F7FF83C00DF2E01 /* Build configuration list for PBXProject "cursor remote" */ = {
+		C47C38B62F854807003417CC /* Build configuration list for PBXProject "cursor-remote" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				C48243862F7FF83E00DF2E01 /* Debug */,
-				C48243872F7FF83E00DF2E01 /* Release */,
+				C47C38C62F854808003417CC /* Debug */,
+				C47C38C72F854808003417CC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C48243882F7FF83E00DF2E01 /* Build configuration list for PBXNativeTarget "cursor remote" */ = {
+		C47C38C82F854808003417CC /* Build configuration list for PBXNativeTarget "cursor-remote" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				C48243892F7FF83E00DF2E01 /* Debug */,
-				C482438A2F7FF83E00DF2E01 /* Release */,
+				C47C38C92F854808003417CC /* Debug */,
+				C47C38CA2F854808003417CC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = C48243732F7FF83C00DF2E01 /* Project object */;
+	rootObject = C47C38B32F854807003417CC /* Project object */;
 }
