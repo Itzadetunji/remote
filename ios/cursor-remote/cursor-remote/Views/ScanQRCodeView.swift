@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ScanQRCodeView: View {
-    let viewModel: HomeViewModel
+    @ObservedObject var viewModel: HomeViewModel
 
     var body: some View {
 
@@ -44,7 +44,36 @@ struct ScanQRCodeView: View {
             Spacer()
         }
         .padding(.horizontal, 24)
-
+        .sheet(isPresented: $viewModel.isQRScannerPresented) {
+            NavigationStack {
+                QRCodeScannerView { code in
+                    Task { await viewModel.handleScannedPairingCode(code) }
+                }
+                .ignoresSafeArea()
+                .navigationTitle("Scan pairing code")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            viewModel.dismissQRScanner()
+                        }
+                    }
+                }
+            }
+        }
+        .alert(
+            "Couldn’t pair",
+            isPresented: Binding(
+                get: { viewModel.pairingError != nil },
+                set: { if !$0 { viewModel.pairingError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {
+                viewModel.pairingError = nil
+            }
+        } message: {
+            Text(viewModel.pairingError ?? "")
+        }
     }
 }
 

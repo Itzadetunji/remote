@@ -4,6 +4,17 @@
 <dict>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Connects to the Cursor Remote pairing service on your local network.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -12,6 +23,14 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>clipit</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.adetunji.cursor-remote.pairing</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>cursorremote</string>
 			</array>
 		</dict>
 	</array>

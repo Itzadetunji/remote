@@ -25,6 +25,9 @@ struct ContentView: View {
                     .navigationTitle("Chat")
                     .navigationBarTitleDisplayMode(.inline)
             }
+            .onOpenURL { url in
+                Task { await viewModel.handleScannedPairingCode(url.absoluteString) }
+            }
         }
     }
 }
