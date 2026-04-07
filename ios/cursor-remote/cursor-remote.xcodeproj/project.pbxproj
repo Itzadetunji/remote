@@ -6,13 +6,65 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXCopyFilesBuildPhase section */
+		C47C3A402F854AB0003417CC /* Copy Fonts */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Font;
+			dstSubfolderSpec = 7;
+			files = (
+			);
+			name = "Copy Fonts";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		C47C38BB2F854807003417CC /* cursor-remote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "cursor-remote.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C47C3A522F854ACD003417CC /* Exceptions for "cursor-remote" folder in "cursor-remote" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C47C38BA2F854807003417CC /* cursor-remote */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		C47C3A512F854ACC003417CC /* Exceptions for "cursor-remote" folder in "Copy Fonts" phase from "cursor-remote" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = C47C3A402F854AB0003417CC /* Copy Fonts */;
+			membershipExceptions = (
+				"Font/Sofia Pro Black Az.otf",
+				"Font/Sofia Pro Black Italic Az.otf",
+				"Font/Sofia Pro Bold Az.otf",
+				"Font/Sofia Pro Bold Italic Az.otf",
+				"Font/Sofia Pro ExtraLight Az.otf",
+				"Font/Sofia Pro ExtraLight Italic Az.otf",
+				"Font/Sofia Pro Light Az.otf",
+				"Font/Sofia Pro Light Italic Az.otf",
+				"Font/Sofia Pro Medium Az.otf",
+				"Font/Sofia Pro Medium Italic Az.otf",
+				"Font/Sofia Pro Regular Az.otf",
+				"Font/Sofia Pro Regular Italic Az.otf",
+				"Font/Sofia Pro Semi Bold Az.otf",
+				"Font/Sofia Pro Semi Bold Italic Az.otf",
+				"Font/Sofia Pro UltraLight Az.otf",
+				"Font/Sofia Pro UltraLight Italic Az.otf",
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C47C38BD2F854807003417CC /* cursor-remote */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C47C3A522F854ACD003417CC /* Exceptions for "cursor-remote" folder in "cursor-remote" target */,
+				C47C3A512F854ACC003417CC /* Exceptions for "cursor-remote" folder in "Copy Fonts" phase from "cursor-remote" target */,
+			);
 			path = "cursor-remote";
 			sourceTree = "<group>";
 		};
@@ -55,6 +107,7 @@
 				C47C38B72F854807003417CC /* Sources */,
 				C47C38B82F854807003417CC /* Frameworks */,
 				C47C38B92F854807003417CC /* Resources */,
+				C47C3A402F854AB0003417CC /* Copy Fonts */,
 			);
 			buildRules = (
 			);
@@ -256,6 +309,7 @@
 				DEVELOPMENT_TEAM = 4BMQZQ7YSK;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "cursor-remote/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +342,7 @@
 				DEVELOPMENT_TEAM = 4BMQZQ7YSK;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "cursor-remote/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

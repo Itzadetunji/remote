@@ -2,56 +2,29 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = HomeViewModel()
+    @State private var showChat = false
 
     var body: some View {
-        ZStack {
-            Color.black
-                .ignoresSafeArea()
-
-            VStack(spacing: 20) {
-                Spacer()
-
-                VStack(spacing: 14) {
-                    Text(viewModel.title)
-                        .font(SofiaFont.semiBold(size: 18))
-                        .foregroundStyle(.primary)
-                        .multilineTextAlignment(.center)
-
-                    Text(viewModel.subtitle)
-                        .font(
-                            .system(
-                                size: 22,
-                                weight: .regular,
-                                design: .default
-                            )
-                        )
-                        .foregroundStyle(.gray)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 36)
+        NavigationStack {
+            ScanQRCodeView(viewModel: viewModel)
+            .navigationTitle("Cursor Remote")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showChat = true
+                    } label: {
+                        Image(systemName: "message")
+                            .symbolRenderingMode(.hierarchical)
+                    }
+                    .accessibilityLabel("Open chat")
                 }
-
-                Button(action: viewModel.scanPairingQR) {
-                    Text(viewModel.scanButtonTitle)
-                        .font(
-                            .system(
-                                size: 18,
-                                weight: .regular,
-                                design: .default
-                            )
-                        )
-                        .foregroundStyle(.white)
-                        .padding(.vertical, 0)
-                        .padding(.horizontal, 0)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.blue)
-                .controlSize(.large)
-                .clipShape(Capsule())
-                .accessibilityLabel("Scan pairing QR code")
-
-                Spacer()
             }
-            .padding(.horizontal, 24)
+            .navigationDestination(isPresented: $showChat) {
+                ChatView()
+                    .navigationTitle("Chat")
+                    .navigationBarTitleDisplayMode(.inline)
+            }
         }
     }
 }

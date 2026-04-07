@@ -9,7 +9,11 @@ import SwiftUI
 
 struct ChatView: View {
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        ContentUnavailableView(
+            "No messages yet",
+            systemImage: "bubble.left.and.bubble.right",
+            description: Text("Pair your device from the Scan tab to start chatting.")
+        )
     }
 }
 
