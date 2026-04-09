@@ -9,12 +9,23 @@ final class HomeViewModel: ObservableObject {
 
     private let pushState: PushState
     private let pairingClient: PairingClient
+    private let pairedConnectionStore: PairedConnectionStore
     private var cancellables = Set<AnyCancellable>()
 
-    init(pushState: PushState = .shared, pairingClient: PairingClient = PairingClient()) {
+    init(
+        pushState: PushState = .shared,
+        pairingClient: PairingClient = PairingClient(),
+        pairedConnectionStore: PairedConnectionStore = PairedConnectionStore()
+    ) {
         self.pushState = pushState
         self.pairingClient = pairingClient
+        self.pairedConnectionStore = pairedConnectionStore
         self.subtitle = pushState.subtitle
+
+        // On every app launch, try to restore a previous successful pairing.
+        if let persistedConnection = pairedConnectionStore.load() {
+            pushState.setConnectedComputer(name: persistedConnection.displayName)
+        }
 
         pushState.objectWillChange
             .receive(on: DispatchQueue.main)
@@ -49,6 +60,16 @@ final class HomeViewModel: ObservableObject {
                 bearerToken: payload.token,
                 deviceTokenHex: deviceTokenHex
             )
+
+            // Save successful pairing so users do not need to scan again next launch.
+            try pairedConnectionStore.save(
+                PairedConnection(
+                    baseURL: payload.baseURL,
+                    displayName: payload.displayName,
+                    pairedAt: Date()
+                )
+            )
+
             pushState.setConnectedComputer(name: payload.displayName)
             isQRScannerPresented = false
         } catch let error as PairingPayloadError {

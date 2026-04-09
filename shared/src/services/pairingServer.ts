@@ -1,6 +1,8 @@
 import express, { type Express, type Request } from "express";
+import os from "node:os";
+import { execSync } from "node:child_process";
 import { networkInterfaces } from "node:os";
-import { type AddressInfo } from "node:net";
+import type { AddressInfo } from "node:net";
 import { createServer, type Server as HttpServer } from "node:http";
 
 export interface RegisteredDevice {
@@ -44,6 +46,18 @@ function getLanIPv4Address(): string | undefined {
 	return undefined;
 }
 
+function getComputerName(): string {
+	if (os.platform() === "darwin") {
+		try {
+			return execSync("scutil --get ComputerName", { encoding: "utf8" }).trim();
+		} catch {
+			// Fall back if the macOS command is unavailable.
+		}
+	}
+
+	return os.hostname();
+}
+
 export class PairingServer {
 	private readonly app = express();
 	private readonly options: PairingServerOptions;
@@ -75,7 +89,8 @@ export class PairingServer {
 
 	public getPairingPayload(): string {
 		const baseUrl = encodeURIComponent(this.getBaseUrl());
-		return `cursorremote://pair?baseUrl=${baseUrl}&token=${this.options.pairingToken}`;
+		const displayName = encodeURIComponent(getComputerName());
+		return `cursorremote://pair?baseUrl=${baseUrl}&token=${this.options.pairingToken}&displayName=${displayName}`;
 	}
 
 	public listDevices(): RegisteredDevice[] {
@@ -132,7 +147,9 @@ export class PairingServer {
 
 			const body = req.body as Partial<RegisteredDevice>;
 			if (!body.deviceToken || !body.platform) {
-				res.status(400).json({ error: "deviceToken and platform are required." });
+				res
+					.status(400)
+					.json({ error: "deviceToken and platform are required." });
 				return;
 			}
 
