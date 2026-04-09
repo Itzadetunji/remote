@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ChatView: View {
     @Environment(\.dismiss) private var dismiss
+    @FocusState private var isChatInputFocused: Bool
     var body: some View {
 
         GeometryReader { geo in
@@ -29,6 +30,10 @@ struct ChatView: View {
                 )
                 .padding(.horizontal, 16)
             }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                isChatInputFocused = false
+            }
 
             .background(Color(uiColor: .systemBackground))
             .safeAreaInset(edge: .top, spacing: 0) {
@@ -40,7 +45,7 @@ struct ChatView: View {
 
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                ChatBoxView()
+                ChatBoxView(isEditorFocused: $isChatInputFocused)
 
             }
         }
