@@ -12,6 +12,10 @@ final class HomeViewModel: ObservableObject {
     private let pairedConnectionStore: PairedConnectionStore
     private var cancellables = Set<AnyCancellable>()
 
+    var isConnected: Bool {
+        pushState.connectedComputerName != nil
+    }
+
     init(
         pushState: PushState = .shared,
         pairingClient: PairingClient = PairingClient(),
@@ -24,7 +28,9 @@ final class HomeViewModel: ObservableObject {
 
         // On every app launch, try to restore a previous successful pairing.
         if let persistedConnection = pairedConnectionStore.load() {
-            pushState.setConnectedComputer(name: persistedConnection.displayName)
+            pushState.setConnectedComputer(
+                name: persistedConnection.displayName
+            )
         }
 
         pushState.objectWillChange
@@ -50,7 +56,9 @@ final class HomeViewModel: ObservableObject {
         pairingError = nil
         do {
             let payload = try PairingPayload.parse(raw)
-            guard let deviceTokenHex = pushState.deviceToken, !deviceTokenHex.isEmpty else {
+            guard let deviceTokenHex = pushState.deviceToken,
+                !deviceTokenHex.isEmpty
+            else {
                 pairingError =
                     "Notifications are not ready yet. Allow notifications when prompted, wait a moment, then scan again."
                 return
@@ -66,6 +74,7 @@ final class HomeViewModel: ObservableObject {
                 PairedConnection(
                     baseURL: payload.baseURL,
                     displayName: payload.displayName,
+                    pairingToken: payload.token,
                     pairedAt: Date()
                 )
             )
@@ -79,5 +88,37 @@ final class HomeViewModel: ObservableObject {
         } catch {
             pairingError = error.localizedDescription
         }
+    }
+
+    /// Disconnect this phone from the paired server and clear local pairing state.
+    func disconnect() async {
+        pairingError = nil
+
+        guard let persisted = pairedConnectionStore.load() else {
+            pushState.setConnectedComputer(name: nil)
+            return
+        }
+
+        guard let deviceTokenHex = pushState.deviceToken,
+            !deviceTokenHex.isEmpty
+        else {
+            pairingError =
+                "Device toekn is missing. Restart the app and try agian"
+            return
+        }
+
+        do {
+            try await pairingClient.disconnectDevice(
+                baseURL: persisted.baseURL,
+                bearerToken: persisted.pairingToken,
+                deviceTokenHex: deviceTokenHex
+            )
+        } catch {
+            // If server is unreachable, still clear local state so user can re-pair.
+            // You can choose stricter behavior later.
+        }
+
+        pairedConnectionStore.clear()
+        pushState.setConnectedComputer(name: nil)
     }
 }

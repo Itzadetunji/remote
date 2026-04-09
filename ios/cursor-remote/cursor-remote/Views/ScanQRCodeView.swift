@@ -28,18 +28,35 @@ struct ScanQRCodeView: View {
                     .padding(.horizontal, 36)
             }
 
-            Button(action: viewModel.scanPairingQR) {
-                Text("Scan QR Code")
-                    .font(SofiaFont.regular(size: 18))
-                    .foregroundStyle(.white)
-                    .padding(.vertical, 0)
-                    .padding(.horizontal, 0)
+            if viewModel.isConnected {
+                Button {
+                    Task { await viewModel.disconnect() }
+                } label: {
+                    Text("Disconnect")
+                        .font(SofiaFont.regular(size: 18))
+                        .foregroundStyle(.white)
+                        .padding(.vertical, 0)
+                        .padding(.horizontal, 0)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .controlSize(.large)
+                .clipShape(Capsule())
+                .accessibilityLabel("Disconnect from paired computer")
+            } else {
+                Button(action: viewModel.scanPairingQR) {
+                    Text("Scan QR Code")
+                        .font(SofiaFont.regular(size: 18))
+                        .foregroundStyle(.white)
+                        .padding(.vertical, 0)
+                        .padding(.horizontal, 0)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.blue)
+                .controlSize(.large)
+                .clipShape(Capsule())
+                .accessibilityLabel("Scan pairing QR code")
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.blue)
-            .controlSize(.large)
-            .clipShape(Capsule())
-            .accessibilityLabel("Scan pairing QR code")
 
             Spacer()
         }

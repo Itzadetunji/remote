@@ -1,3 +1,4 @@
+
 import Foundation
 
 /// Persisted details we need to remember a successful pairing.
@@ -5,5 +6,6 @@ import Foundation
 struct PairedConnection: Codable, Sendable {
     let baseURL: URL
     let displayName: String
+    let pairingToken: String
     let pairedAt: Date
 }

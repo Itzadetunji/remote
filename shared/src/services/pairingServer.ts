@@ -172,5 +172,23 @@ export class PairingServer {
 				}
 			}
 		});
+
+		this.app.post("/devices/disconnect", (req, res) => {
+			const bearerToken = getBearerToken(req);
+			if (bearerToken !== this.options.pairingToken) {
+				res.status(401).json({ error: "Unauthorized" });
+				return;
+			}
+
+			const body = req.body as Partial<RegisteredDevice>;
+			if (!body.deviceToken) {
+				res.status(400).json({ error: "deviceToken is required." });
+				return;
+			}
+
+			// delete() returns true if the token existed and was removed.
+			const removed = this.devices.delete(body.deviceToken);
+			res.json({ ok: true, removed });
+		});
 	}
 }
