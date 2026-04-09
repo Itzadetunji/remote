@@ -11,7 +11,8 @@
   "dependencies": {
     "@cursorremote/shared": "file:../shared",
     "picocolors": "^1.1.1",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.2",

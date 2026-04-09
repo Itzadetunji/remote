@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C47C3CB12F87E232003417CC /* SocketIO in Frameworks */ = {isa = PBXBuildFile; productRef = C47C3CB02F87E232003417CC /* SocketIO */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXCopyFilesBuildPhase section */
 		C47C3A402F854AB0003417CC /* Copy Fonts */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -75,6 +79,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C47C3CB12F87E232003417CC /* SocketIO in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -118,6 +123,7 @@
 			);
 			name = "cursor-remote";
 			packageProductDependencies = (
+				C47C3CB02F87E232003417CC /* SocketIO */,
 			);
 			productName = "cursor-remote";
 			productReference = C47C38BB2F854807003417CC /* cursor-remote.app */;
@@ -147,6 +153,9 @@
 			);
 			mainGroup = C47C38B22F854807003417CC;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C47C3CAF2F87E232003417CC /* XCRemoteSwiftPackageReference "socket" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C47C38BC2F854807003417CC /* Products */;
 			projectDirPath = "";
@@ -391,6 +400,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C47C3CAF2F87E232003417CC /* XCRemoteSwiftPackageReference "socket" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/socketio/socket.io-client-swift";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C47C3CB02F87E232003417CC /* SocketIO */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C47C3CAF2F87E232003417CC /* XCRemoteSwiftPackageReference "socket" */;
+			productName = SocketIO;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C47C38B32F854807003417CC /* Project object */;
 }
