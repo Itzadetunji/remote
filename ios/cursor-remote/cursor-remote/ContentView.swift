@@ -22,8 +22,6 @@ struct ContentView: View {
             }
             .navigationDestination(isPresented: $showChat) {
                 ChatView()
-                    .navigationTitle("Chat")
-                    .navigationBarTitleDisplayMode(.inline)
             }
             .onOpenURL { url in
                 Task { await viewModel.handleScannedPairingCode(url.absoluteString) }
