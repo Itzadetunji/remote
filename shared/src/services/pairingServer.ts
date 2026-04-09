@@ -174,19 +174,14 @@ export class PairingServer {
 		});
 
 		this.app.post("/devices/disconnect", (req, res) => {
-			const bearerToken = getBearerToken(req);
-			if (bearerToken !== this.options.pairingToken) {
-				res.status(401).json({ error: "Unauthorized" });
-				return;
-			}
-
 			const body = req.body as Partial<RegisteredDevice>;
 			if (!body.deviceToken) {
 				res.status(400).json({ error: "deviceToken is required." });
 				return;
 			}
 
-			// delete() returns true if the token existed and was removed.
+			// Disconnect is keyed to the already-registered APNs device token.
+			// This keeps disconnect working even when pairing tokens rotate per server run.
 			const removed = this.devices.delete(body.deviceToken);
 			res.json({ ok: true, removed });
 		});

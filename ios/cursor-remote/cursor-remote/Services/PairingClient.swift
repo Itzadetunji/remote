@@ -107,19 +107,15 @@ struct PairingClient: Sendable {
         }
     }
 
-    /// POST `{baseURL}/devices/disconnect` with Bearer token and JSON body.
+    /// POST `{baseURL}/devices/disconnect` with JSON body.
+    /// Returns `true` when the server confirms the token was removed.
     func disconnectDevice(
         baseURL: URL,
-        bearerToken: String,
         deviceTokenHex: String
-    ) async throws {
+    ) async throws -> Bool {
         let url = baseURL.appendingPathComponent("devices/disconnect")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue(
-            "Bearer \(bearerToken)",
-            forHTTPHeaderField: "Authorization"
-        )
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 30
         let body = DeviceDisconnectBody(deviceToken: deviceTokenHex)
@@ -133,6 +129,11 @@ struct PairingClient: Sendable {
                 let text = String(data: data, encoding: .utf8)
                 throw PairingClientError.httpStatus(http.statusCode, text)
             }
+            let decoded = try JSONDecoder().decode(
+                DeviceDisconnectResponse.self,
+                from: data
+            )
+            return decoded.removed
         } catch let error as PairingClientError {
             throw error
         } catch {
@@ -149,4 +150,9 @@ private struct DeviceRegistrationBody: Encodable {
 
 private struct DeviceDisconnectBody: Encodable {
     let deviceToken: String
+}
+
+private struct DeviceDisconnectResponse: Decodable {
+    let ok: Bool
+    let removed: Bool
 }
