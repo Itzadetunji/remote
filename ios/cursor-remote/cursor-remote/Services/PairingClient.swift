@@ -56,6 +56,8 @@ enum PairingClientError: LocalizedError {
 
 struct PairingClient: Sendable {
     private let session: URLSession
+    private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
 
     init(session: URLSession = PairingClient.makeDefaultSession()) {
         self.session = session
@@ -75,36 +77,18 @@ struct PairingClient: Sendable {
         bearerToken: String,
         deviceTokenHex: String
     ) async throws {
-        let url = baseURL.appendingPathComponent("devices")
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(
-            "Bearer \(bearerToken)",
-            forHTTPHeaderField: "Authorization"
-        )
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 30
-
         let body = DeviceRegistrationBody(
             deviceToken: deviceTokenHex,
             platform: "ios"
         )
-        request.httpBody = try JSONEncoder().encode(body)
-
-        do {
-            let (data, response) = try await session.data(for: request)
-            guard let http = response as? HTTPURLResponse else {
-                throw PairingClientError.invalidResponse
-            }
-            guard (200...299).contains(http.statusCode) else {
-                let text = String(data: data, encoding: .utf8)
-                throw PairingClientError.httpStatus(http.statusCode, text)
-            }
-        } catch let error as PairingClientError {
-            throw error
-        } catch {
-            throw PairingClientError.transport(error)
-        }
+        let request = try makeRequest(
+            baseURL: baseURL,
+            path: "devices",
+            method: "POST",
+            bearerToken: bearerToken,
+            body: body
+        )
+        try await sendWithoutDecoding(request)
     }
 
     /// POST `{baseURL}/devices/disconnect` with JSON body.
@@ -113,13 +97,44 @@ struct PairingClient: Sendable {
         baseURL: URL,
         deviceTokenHex: String
     ) async throws -> Bool {
-        let url = baseURL.appendingPathComponent("devices/disconnect")
+        let body = DeviceDisconnectBody(deviceToken: deviceTokenHex)
+        let request = try makeRequest(
+            baseURL: baseURL,
+            path: "devices/disconnect",
+            method: "POST",
+            body: body
+        )
+        let response = try await send(request, decodeAs: DeviceDisconnectResponse.self)
+        return response.removed
+    }
+
+    /// Builds a request with shared defaults so endpoint methods stay small.
+    private func makeRequest<Body: Encodable>(
+        baseURL: URL,
+        path: String,
+        method: String,
+        bearerToken: String? = nil,
+        body: Body? = nil
+    ) throws -> URLRequest {
+        let url = baseURL.appendingPathComponent(path)
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
+        request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 30
-        let body = DeviceDisconnectBody(deviceToken: deviceTokenHex)
-        request.httpBody = try JSONEncoder().encode(body)
+        if let bearerToken, !bearerToken.isEmpty {
+            request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        }
+        if let body {
+            request.httpBody = try encoder.encode(body)
+        }
+        return request
+    }
+
+    /// Sends request, validates status codes, and decodes typed responses.
+    private func send<Response: Decodable>(
+        _ request: URLRequest,
+        decodeAs responseType: Response.Type
+    ) async throws -> Response {
         do {
             let (data, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse else {
@@ -129,11 +144,8 @@ struct PairingClient: Sendable {
                 let text = String(data: data, encoding: .utf8)
                 throw PairingClientError.httpStatus(http.statusCode, text)
             }
-            let decoded = try JSONDecoder().decode(
-                DeviceDisconnectResponse.self,
-                from: data
-            )
-            return decoded.removed
+
+            return try decoder.decode(responseType, from: data)
         } catch let error as PairingClientError {
             throw error
         } catch {
@@ -141,6 +153,23 @@ struct PairingClient: Sendable {
         }
     }
 
+    /// Sends request and only validates success status (no response decoding).
+    private func sendWithoutDecoding(_ request: URLRequest) async throws {
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else {
+                throw PairingClientError.invalidResponse
+            }
+            guard (200...299).contains(http.statusCode) else {
+                let text = String(data: data, encoding: .utf8)
+                throw PairingClientError.httpStatus(http.statusCode, text)
+            }
+        } catch let error as PairingClientError {
+            throw error
+        } catch {
+            throw PairingClientError.transport(error)
+        }
+    }
 }
 
 private struct DeviceRegistrationBody: Encodable {
