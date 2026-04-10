@@ -26,6 +26,12 @@ struct ScanQRCodeView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 36)
+
+                Text(viewModel.realtimeStatusText)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 36)
             }
 
             if viewModel.isConnected {
