@@ -1,37 +1,5 @@
-import { URL } from "node:url";
 import type { DomScope, DomSnapshot } from "./types";
-
-type CdpClient = {
-  Runtime: {
-    enable: () => Promise<void>;
-    evaluate: (params: {
-      expression: string;
-      returnByValue: boolean;
-      awaitPromise: boolean;
-    }) => Promise<{ result?: { value?: unknown } }>;
-  };
-  close: () => Promise<void>;
-};
-
-/** CommonJS export: callable connect + `.List` (no `.default`). */
-type ChromeRemoteInterface = ((
-  options: { host: string; port: number; target: string },
-) => Promise<CdpClient>) & {
-  List: (options: {
-    host: string;
-    port: number;
-    secure: boolean;
-  }) => Promise<Array<{ id: string; type: string }>>;
-};
-
-function parseCdpUrl(cdpUrl: string): { host: string; port: number; secure: boolean } {
-  const parsed = new URL(cdpUrl);
-  return {
-    host: parsed.hostname,
-    port: Number(parsed.port || (parsed.protocol === "https:" ? "443" : "80")),
-    secure: parsed.protocol === "https:"
-  };
-}
+import { evaluateOnCursorPage } from "./cdpPageEvaluate";
 
 function isProbeResultLike(value: unknown): value is DomSnapshot {
   if (!value || typeof value !== "object") {
@@ -73,56 +41,34 @@ export async function runDomProbeOutcome(
   cdpUrl: string,
   expression: string
 ): Promise<DomProbeOutcome> {
-  const parsed = parseCdpUrl(cdpUrl);
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const CDP = require("chrome-remote-interface") as ChromeRemoteInterface;
-  try {
-    const targets = await CDP.List(parsed);
-    if (!targets.length) {
-      return { ok: false, reason: "no_targets" };
-    }
-    const target = targets.find((item) => item.type === "page") ?? targets[0];
-    if (!target) {
-      return { ok: false, reason: "no_page_target" };
-    }
-
-    const client = await CDP({
-      host: parsed.host,
-      port: parsed.port,
-      target: target.id
-    });
-
-    try {
-      await client.Runtime.enable();
-      const evaluated = await client.Runtime.evaluate({
-        expression,
-        returnByValue: true,
-        awaitPromise: false
-      });
-      const value = evaluated.result?.value;
-      if (!isProbeResultLike(value)) {
-        return {
-          ok: false,
-          reason: "invalid_result",
-          detail: value === undefined ? "evaluate returned undefined" : "evaluate did not return a DomSnapshot shape"
-        };
-      }
-      const snapshot = value as DomSnapshot;
-      const composerId = snapshot.composerId?.trim() ?? "";
-      const tabRaw = snapshot.tabTitle?.trim() ?? "";
-      const scope: DomScope = {
-        targetId: target.id,
-        composerId,
-        tabTitle: tabRaw.length > 0 ? tabRaw : undefined
-      };
-      return { ok: true, snapshot, scope };
-    } finally {
-      await client.close();
-    }
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    return { ok: false, reason: "cdp_error", detail: msg };
+  const evaluated = await evaluateOnCursorPage(cdpUrl, expression);
+  if (!evaluated.ok) {
+    return {
+      ok: false,
+      reason: evaluated.reason,
+      detail: evaluated.detail
+    };
   }
+  const value = evaluated.value;
+  if (!isProbeResultLike(value)) {
+    return {
+      ok: false,
+      reason: "invalid_result",
+      detail:
+        value === undefined
+          ? "evaluate returned undefined"
+          : "evaluate did not return a DomSnapshot shape"
+    };
+  }
+  const snapshot = value as DomSnapshot;
+  const composerId = snapshot.composerId?.trim() ?? "";
+  const tabRaw = snapshot.tabTitle?.trim() ?? "";
+  const scope: DomScope = {
+    targetId: evaluated.targetId,
+    composerId,
+    tabTitle: tabRaw.length > 0 ? tabRaw : undefined
+  };
+  return { ok: true, snapshot, scope };
 }
 
 export async function runDomProbe(cdpUrl: string, expression: string): Promise<DomSnapshot | undefined> {

@@ -22,6 +22,11 @@ export interface PairingServerOptions {
 	onDeviceRegistered?: (device: RegisteredDevice) => void;
 	/** Optional hook for host-specific routes (commands, status, etc.). */
 	registerRoutes?: (app: Express, server: PairingServer) => void;
+	/**
+	 * CDP base URL (e.g. `http://127.0.0.1:9222`) for injecting iOS chat into the Cursor agent.
+	 * Same value as `CURSOR_REMOTE_CDP_URL` on the service.
+	 */
+	realtimeCdpUrl?: string;
 }
 
 function getBearerToken(request: Request): string | undefined {
@@ -111,6 +116,7 @@ export class PairingServer {
 			this.socketIo = createSocketServer(this.httpServer, {
 				isKnownDeviceToken: (token: string) => this.devices.has(token),
 				getComputerName,
+				cdpUrl: this.options.realtimeCdpUrl,
 			});
 			this.httpServer.once("error", reject);
 			this.httpServer.listen(this.options.port, this.options.host, () => {

@@ -45,6 +45,7 @@ export async function main(): Promise<void> {
 		host: env.host,
 		port: env.port,
 		pairingToken: env.pairingToken,
+		realtimeCdpUrl: env.cdpUrl,
 		onDeviceRegistered: (device) => {
 			log(
 				`Device paired: ${device.platform} (${device.deviceToken.slice(0, 8)}...)`,

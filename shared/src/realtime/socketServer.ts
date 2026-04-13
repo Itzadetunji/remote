@@ -1,5 +1,6 @@
 import type { Server as HttpServer } from "node:http";
 import { Server as SocketServer } from "socket.io";
+import { injectTextIntoAgentComposer } from "../dom/agentComposerInject";
 import {
 	type AuthRequestPayload,
 	type MessageSendPayload,
@@ -10,6 +11,8 @@ export type RealtimeContext = {
 	// use your existing pairing server/device registry
 	isKnownDeviceToken: (token: string) => boolean;
 	getComputerName: () => string;
+	/** When set, `message:send` from a paired device injects into the Cursor agent composer via CDP. */
+	cdpUrl?: string;
 };
 
 export const createSocketServer = (
@@ -106,6 +109,29 @@ export const createSocketServer = (
 			console.log(
 				`[cursor-remote][realtime] message:send id=${socket.id} conversationId=${payload.conversationId} text=${JSON.stringify(payload.text)}`,
 			);
+
+			const cdpUrl = context.cdpUrl?.trim();
+			if (!cdpUrl) {
+				return;
+			}
+
+			void injectTextIntoAgentComposer(cdpUrl, payload.text).then((outcome) => {
+				if (outcome.ok) {
+					// eslint-disable-next-line no-console
+					console.log(
+						`[cursor-remote][realtime] agent:inject ok id=${socket.id}`,
+					);
+					return;
+				}
+				const detail =
+					outcome.reason === "cdp"
+						? outcome.detail ?? "cdp_error"
+						: [outcome.step, outcome.detail].filter(Boolean).join(" — ");
+				// eslint-disable-next-line no-console
+				console.warn(
+					`[cursor-remote][realtime] agent:inject failed id=${socket.id} reason=${outcome.reason} ${detail}`,
+				);
+			});
 		});
 
 		socket.on("disconnect", (reason) => {
