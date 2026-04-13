@@ -4,6 +4,9 @@ import { execSync } from "node:child_process";
 import { networkInterfaces } from "node:os";
 import type { AddressInfo } from "node:net";
 import { createServer, type Server as HttpServer } from "node:http";
+import type { Server as SocketIOServer } from "socket.io";
+
+import { createSocketServer } from "../realtime/socketServer";
 
 export interface RegisteredDevice {
 	deviceToken: string;
@@ -63,6 +66,7 @@ export class PairingServer {
 	private readonly options: PairingServerOptions;
 	private readonly devices = new Map<string, RegisteredDevice>();
 	private httpServer: HttpServer | undefined;
+	private socketIo: SocketIOServer | undefined;
 
 	public constructor(options: PairingServerOptions) {
 		this.options = options;
@@ -104,6 +108,10 @@ export class PairingServer {
 
 		await new Promise<void>((resolve, reject) => {
 			this.httpServer = createServer(this.app);
+			this.socketIo = createSocketServer(this.httpServer, {
+				isKnownDeviceToken: (token: string) => this.devices.has(token),
+				getComputerName,
+			});
 			this.httpServer.once("error", reject);
 			this.httpServer.listen(this.options.port, this.options.host, () => {
 				this.httpServer?.off("error", reject);
@@ -119,6 +127,15 @@ export class PairingServer {
 
 		const server = this.httpServer;
 		this.httpServer = undefined;
+
+		if (this.socketIo) {
+			const io = this.socketIo;
+			this.socketIo = undefined;
+			await new Promise<void>((resolve) => {
+				io.close(() => resolve());
+			});
+		}
+
 		await new Promise<void>((resolve, reject) => {
 			server.close((error) => {
 				if (error) {

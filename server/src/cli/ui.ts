@@ -38,7 +38,9 @@ export function printHelp(): void {
 	console.log(pc.bold("Keyboard commands"));
 	console.log(`  ${pc.magenta("h")}  ${pc.dim("—")}  show this help`);
 	console.log(`  ${pc.magenta("c")}  ${pc.dim("—")}  check CDP connection`);
-	console.log(`  ${pc.magenta("q")}  ${pc.dim("—")}  show pairing URL & QR again`);
+	console.log(
+		`  ${pc.magenta("q")}  ${pc.dim("—")}  show pairing URL & QR again`,
+	);
 	console.log(`  ${pc.magenta("p")}  ${pc.dim("—")}  send test push`);
 	console.log(`  ${pc.magenta("x")}  ${pc.dim("—")}  exit service`);
 	console.log(`  ${pc.dim("Ctrl+C")}  ${pc.dim("—")}  exit`);
@@ -46,7 +48,7 @@ export function printHelp(): void {
 }
 
 export function logService(message: string): void {
-	console.log(pc.dim(`[cursor-remote] ${message}`));
+	console.log(pc.yellow(`[cursor-remote]`) + pc.dim(`${message}`));
 }
 
 /**

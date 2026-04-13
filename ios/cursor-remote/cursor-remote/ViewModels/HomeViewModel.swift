@@ -31,35 +31,35 @@ final class HomeViewModel: ObservableObject {
     }
 
     init(
-        pushState: PushState = .shared,
+        pushState: PushState? = nil,
         pairingClient: PairingClient = PairingClient(),
         pairedConnectionStore: PairedConnectionStore = PairedConnectionStore(),
-        realtimeSocketService: RealtimeSocketService = RealtimeSocketService()
+        realtimeSocketService: RealtimeSocketService? = nil
     ) {
-        self.pushState = pushState
+        self.pushState = pushState ?? .shared
         self.pairingClient = pairingClient
         self.pairedConnectionStore = pairedConnectionStore
-        self.realtimeSocketService = realtimeSocketService
-        self.subtitle = pushState.subtitle
+        self.realtimeSocketService = realtimeSocketService ?? RealtimeSocketService()
+        self.subtitle = self.pushState.subtitle
         if let persistedConnection = pairedConnectionStore.load() {
-            pushState.setConnectedComputer(
+            self.pushState.setConnectedComputer(
                 name: persistedConnection.displayName
             )
-            if let token = pushState.deviceToken, !token.isEmpty {
-                realtimeSocketService.connect(
+            if let token = self.pushState.deviceToken, !token.isEmpty {
+                self.realtimeSocketService.connect(
                     pairing: persistedConnection,
                     deviceToken: token
                 )
             }
         }
-        realtimeSocketService.$state
+        self.realtimeSocketService.$state
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newState in
                 self?.realtimeState = newState
             }
             .store(in: &cancellables)
 
-        pushState.objectWillChange
+        self.pushState.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self else { return }

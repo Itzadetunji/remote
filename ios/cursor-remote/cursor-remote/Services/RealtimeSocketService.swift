@@ -5,6 +5,7 @@
 //  Created by Adetunji Adeyinka on 09/04/2026.
 //
 
+import Combine
 import Foundation
 import SocketIO
 
@@ -18,6 +19,52 @@ final class RealtimeSocketService: ObservableObject {
         static let authError = "auth:error"
         static let messageSend = "message:send"
         static let messageReceive = "message:receive"
+    }
+
+    /// ANSI colors for Xcode / device console (visible in most modern terminals).
+    private enum Log {
+        static let outgoing = "\u{001B}[35m"  // magenta — client → server
+        static let incoming = "\u{001B}[36m"  // cyan — server → client
+        static let reset = "\u{001B}[0m"
+
+        static func describe(_ data: [Any]) -> String {
+            data.map { item -> String in
+                if let d = item as? [String: Any],
+                    let json = try? JSONSerialization.data(
+                        withJSONObject: d,
+                        options: [.sortedKeys, .prettyPrinted]
+                    ),
+                    let s = String(data: json, encoding: .utf8)
+                {
+                    return s
+                }
+                if let arr = item as? [Any] {
+                    return describe(arr)
+                }
+                return String(describing: item)
+            }.joined(separator: " ")
+        }
+
+        static func describePayload(_ payload: [String: Any]) -> String {
+            guard
+                let json = try? JSONSerialization.data(
+                    withJSONObject: payload,
+                    options: [.sortedKeys, .prettyPrinted]
+                ),
+                let s = String(data: json, encoding: .utf8)
+            else { return String(describing: payload) }
+            return s
+        }
+
+        static func out(_ event: String, payload: [String: Any]) {
+            print(
+                "\(outgoing)[WS →]\(reset) \(event) \(describePayload(payload))"
+            )
+        }
+
+        static func `in`(_ event: String, data: [Any]) {
+            print("\(incoming)[WS ←]\(reset) \(event) \(describe(data))")
+        }
     }
 
     @Published private(set) var state: RealtimeConnectionState = .disconnected
@@ -56,18 +103,21 @@ final class RealtimeSocketService: ObservableObject {
         client.on(clientEvent: .connect) {
             [weak self] _, _ in
             guard let self else { return }
+            Log.in("socket.io:connect", data: [])
             self.state = .connectedUnauthenticated
-            // self.emitAuthRequest()
+            self.emitAuthRequest()
         }
 
         client.on(clientEvent: .disconnect) {
             [weak self] data, _ in
             guard let self else { return }
+            Log.in("socket.io:disconnect", data: data)
             self.state = .disconnected
         }
 
         client.on(Event.connectionState) { [weak self] data, _ in
             guard let self else { return }
+            Log.in(Event.connectionState, data: data)
             guard let payload = data.first as? [String: Any] else { return }
 
             let connected = payload["connected"] as? Bool ?? false
@@ -80,55 +130,58 @@ final class RealtimeSocketService: ObservableObject {
             } else {
                 self.state = .connectedUnauthenticated
             }
-
-            client.on(Event.authSuccess) {
-                [weak self] data, _ in
-                guard let self else { return }
-                self.state = .authenticated
-                self.lastError = nil
-            }
-
-            client.on(Event.authError) {
-                [weak self] data, _ in
-                guard let self else { return }
-                self.state = .connectedUnauthenticated
-
-                let payload = data.first as? [String: Any]
-                let message =
-                    payload?["message"] as? String ?? "Authentication failed."
-                self.lastError = message
-            }
-
-            client.on(Event.messageReceive) {
-                [weak self] data, _ in
-                guard let self else { return }
-                guard let payload = data.first as? [String: Any] else { return }
-
-                guard
-                    let id = payload["id"] as? String,
-                    let text = payload["text"] as? String,
-                    let conversationId = payload["conversationId"] as? String
-                else {
-                    return
-                }
-
-                let createdAtMs =
-                    payload["createdAt"] as? Double ?? Date()
-                    .timeIntervalSince1970 * 1000
-                let createdAt = Date(timeIntervalSince1970: createdAtMs / 1000)
-
-                self.messages.append(
-                    RealtimeMessage(
-                        id: id,
-                        text: text,
-                        conversationId: conversationId,
-                        createdAt: createdAt
-                    )
-                )
-            }
-
-            client.connect()
         }
+
+        client.on(Event.authSuccess) {
+            [weak self] data, _ in
+            guard let self else { return }
+            Log.in(Event.authSuccess, data: data)
+            self.state = .authenticated
+            self.lastError = nil
+        }
+
+        client.on(Event.authError) {
+            [weak self] data, _ in
+            guard let self else { return }
+            Log.in(Event.authError, data: data)
+            self.state = .connectedUnauthenticated
+
+            let payload = data.first as? [String: Any]
+            let message =
+                payload?["message"] as? String ?? "Authentication failed."
+            self.lastError = message
+        }
+
+        client.on(Event.messageReceive) {
+            [weak self] data, _ in
+            guard let self else { return }
+            Log.in(Event.messageReceive, data: data)
+            guard let payload = data.first as? [String: Any] else { return }
+
+            guard
+                let id = payload["id"] as? String,
+                let text = payload["text"] as? String,
+                let conversationId = payload["conversationId"] as? String
+            else {
+                return
+            }
+
+            let createdAtMs =
+                payload["createdAt"] as? Double ?? Date()
+                .timeIntervalSince1970 * 1000
+            let createdAt = Date(timeIntervalSince1970: createdAtMs / 1000)
+
+            self.messages.append(
+                RealtimeMessage(
+                    id: id,
+                    text: text,
+                    conversationId: conversationId,
+                    createdAt: createdAt
+                )
+            )
+        }
+
+        client.connect()
     }
     func disconnect() {
         socket?.disconnect()
@@ -140,13 +193,14 @@ final class RealtimeSocketService: ObservableObject {
 
     func sendMessage(text: String, conversationId: String) {
         guard state == .authenticated else { return }
+        let payload: [String: Any] = [
+            "text": text,
+            "conversationId": conversationId,
+        ]
+        Log.out(Event.messageSend, payload: payload)
         socket?.emit(
             Event.messageSend,
-            [
-                "text": text,
-                "conversationId": conversationId,
-
-            ]
+            payload
         )
     }
 
@@ -159,6 +213,7 @@ final class RealtimeSocketService: ObservableObject {
         if let pairingToken = currentPairing?.pairingToken {
             payload["pairingToken"] = pairingToken
         }
+        Log.out(Event.authRequest, payload: payload)
         socket.emit(Event.authRequest, payload)
     }
 
