@@ -21,7 +21,7 @@ struct ContentView: View {
                 }
             }
             .navigationDestination(isPresented: $showChat) {
-                ChatView()
+                ChatView(viewModel: viewModel)
             }
             .onOpenURL { url in
                 Task { await viewModel.handleScannedPairingCode(url.absoluteString) }

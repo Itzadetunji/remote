@@ -171,14 +171,15 @@ final class RealtimeSocketService: ObservableObject {
                 .timeIntervalSince1970 * 1000
             let createdAt = Date(timeIntervalSince1970: createdAtMs / 1000)
 
-            self.messages.append(
-                RealtimeMessage(
-                    id: id,
-                    text: text,
-                    conversationId: conversationId,
-                    createdAt: createdAt
+                self.messages.append(
+                    RealtimeMessage(
+                        id: id,
+                        text: text,
+                        conversationId: conversationId,
+                        createdAt: createdAt,
+                        isOutbound: false
+                    )
                 )
-            )
         }
 
         client.connect()
@@ -193,8 +194,22 @@ final class RealtimeSocketService: ObservableObject {
 
     func sendMessage(text: String, conversationId: String) {
         guard state == .authenticated else { return }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        let localId = UUID().uuidString
+        messages.append(
+            RealtimeMessage(
+                id: localId,
+                text: trimmed,
+                conversationId: conversationId,
+                createdAt: Date(),
+                isOutbound: true
+            )
+        )
+
         let payload: [String: Any] = [
-            "text": text,
+            "text": trimmed,
             "conversationId": conversationId,
         ]
         Log.out(Event.messageSend, payload: payload)
@@ -224,4 +239,6 @@ struct RealtimeMessage: Identifiable, Equatable {
     let text: String
     let conversationId: String
     let createdAt: Date
+    /// `true` for messages typed on this device; `false` for `message:receive` from the server.
+    var isOutbound: Bool = false
 }

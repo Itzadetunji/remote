@@ -11,6 +11,16 @@ struct ChatBoxView: View {
   @State private var text = ""
   @Environment(\.colorScheme) private var colorScheme
   @FocusState.Binding var isEditorFocused: Bool
+  var canSend: Bool
+  var onSend: (String) -> Void
+
+  private var trimmed: String {
+    text.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
+  private var sendEnabled: Bool {
+    canSend && !trimmed.isEmpty
+  }
 
   var body: some View {
     VStack {
@@ -37,9 +47,17 @@ struct ChatBoxView: View {
         }
 
         HStack {
+          if !canSend {
+            Text("Connect and authenticate to send.")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
           Spacer()
           Button(action: {
-            // send message
+            guard sendEnabled else { return }
+            onSend(trimmed)
+            text = ""
+            isEditorFocused = false
           }) {
             Image(systemName: "arrow.up")
               .font(.system(size: 16, weight: .semibold))
@@ -47,6 +65,8 @@ struct ChatBoxView: View {
           .frame(width: 32, height: 32)
           .buttonStyle(.glass)
           .foregroundStyle(.primary)
+          .opacity(sendEnabled ? 1 : 0.35)
+          .disabled(!sendEnabled)
           .clipShape(
             RoundedRectangle(cornerRadius: 48, style: .continuous)
           )
@@ -76,5 +96,9 @@ struct ChatBoxView: View {
 
 #Preview {
   @Previewable @FocusState var isEditorFocused: Bool
-  ChatBoxView(isEditorFocused: $isEditorFocused)
+  ChatBoxView(
+    isEditorFocused: $isEditorFocused,
+    canSend: true,
+    onSend: { _ in }
+  )
 }

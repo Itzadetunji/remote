@@ -3,11 +3,15 @@ import Foundation
 
 @MainActor
 final class HomeViewModel: ObservableObject {
+  /// Single chat thread for now; server logs use this id.
+  static let defaultConversationId = "default"
+
   @Published private(set) var subtitle: String
   @Published var isQRScannerPresented = false
   @Published var pairingError: String?
   @Published private(set) var realtimeState: RealtimeConnectionState =
     .disconnected
+  @Published private(set) var chatMessages: [RealtimeMessage] = []
 
   private let pushState: PushState
   private let pairingClient: PairingClient
@@ -52,6 +56,14 @@ final class HomeViewModel: ObservableObject {
         )
       }
     }
+    self.chatMessages = self.realtimeSocketService.messages
+    self.realtimeSocketService.$messages
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] messages in
+        self?.chatMessages = messages
+      }
+      .store(in: &cancellables)
+
     self.realtimeSocketService.$state
       .receive(on: DispatchQueue.main)
       .sink { [weak self] newState in
@@ -75,6 +87,13 @@ final class HomeViewModel: ObservableObject {
 
   func dismissQRScanner() {
     isQRScannerPresented = false
+  }
+
+  func sendChatMessage(_ rawText: String) {
+    realtimeSocketService.sendMessage(
+      text: rawText,
+      conversationId: Self.defaultConversationId
+    )
   }
 
   /// Parses QR text, registers this device with the pairing server, then updates `PushState`.

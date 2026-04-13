@@ -1,6 +1,10 @@
 import type { Server as HttpServer } from "node:http";
 import { Server as SocketServer } from "socket.io";
-import { type AuthRequestPayload, RT_EVENTS } from "./protocol";
+import {
+	type AuthRequestPayload,
+	type MessageSendPayload,
+	RT_EVENTS,
+} from "./protocol";
 
 export type RealtimeContext = {
 	// use your existing pairing server/device registry
@@ -75,6 +79,33 @@ export const createSocketServer = (
 				authenticated: true,
 				socketId: socket.id,
 			});
+		});
+
+		socket.on(RT_EVENTS.MESSAGE_SEND, (raw: unknown) => {
+			if (!socket.data.authenticated) {
+				// eslint-disable-next-line no-console
+				console.warn(
+					`[cursor-remote][realtime] message:send ignored (not authenticated) id=${socket.id}`,
+				);
+				return;
+			}
+
+			const payload = raw as Partial<MessageSendPayload>;
+			if (
+				typeof payload?.text !== "string" ||
+				typeof payload?.conversationId !== "string"
+			) {
+				// eslint-disable-next-line no-console
+				console.warn(
+					`[cursor-remote][realtime] message:send invalid payload id=${socket.id}`,
+				);
+				return;
+			}
+
+			// eslint-disable-next-line no-console
+			console.log(
+				`[cursor-remote][realtime] message:send id=${socket.id} conversationId=${payload.conversationId} text=${JSON.stringify(payload.text)}`,
+			);
 		});
 
 		socket.on("disconnect", (reason) => {
