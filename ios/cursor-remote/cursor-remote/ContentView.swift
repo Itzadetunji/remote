@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var viewModel = HomeViewModel()
     @State private var showChat = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
@@ -25,6 +26,11 @@ struct ContentView: View {
             }
             .onOpenURL { url in
                 Task { await viewModel.handleScannedPairingCode(url.absoluteString) }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    viewModel.sceneDidBecomeActive()
+                }
             }
         }
     }

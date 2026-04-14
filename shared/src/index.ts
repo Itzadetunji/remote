@@ -3,6 +3,7 @@ export * from "./apns/apnsDefaults";
 export * from "./cdp/cdp";
 export * from "./dom/agentComposerInject";
 export * from "./dom/agentStateMachine";
+export * from "./dom/assistantReplyStream";
 export * from "./dom/cdpPageEvaluate";
 export * from "./dom/cdpWebSocketClient";
 export * from "./dom/cursorComposerSend";

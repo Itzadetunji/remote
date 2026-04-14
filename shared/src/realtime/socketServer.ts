@@ -1,6 +1,6 @@
 import type { Server as HttpServer } from "node:http";
 import { Server as SocketServer } from "socket.io";
-import { injectTextIntoAgentComposer } from "../dom/agentComposerInject";
+import { injectAndStreamAssistantReply } from "../dom/assistantReplyStream";
 import {
 	type AuthRequestPayload,
 	type MessageSendPayload,
@@ -115,21 +115,30 @@ export const createSocketServer = (
 				return;
 			}
 
-			void injectTextIntoAgentComposer(cdpUrl, payload.text).then((outcome) => {
-				if (outcome.ok) {
-					// eslint-disable-next-line no-console
-					console.log(
-						`[cursor-remote][realtime] agent:inject ok id=${socket.id}`,
-					);
-					return;
-				}
-				const detail =
-					outcome.reason === "cdp"
-						? outcome.detail ?? "cdp_error"
-						: [outcome.step, outcome.detail].filter(Boolean).join(" — ");
+			void injectAndStreamAssistantReply(
+				cdpUrl,
+				payload.text,
+				payload.conversationId,
+				(chunk) => {
+					socket.emit(RT_EVENTS.MESSAGE_RECEIVE, {
+						id: chunk.id,
+						text: chunk.text,
+						conversationId: chunk.conversationId,
+						createdAt: chunk.createdAt,
+						done: chunk.done,
+					});
+					if (chunk.done) {
+						// eslint-disable-next-line no-console
+						console.log(
+							`[cursor-remote][realtime] agent:stream done id=${socket.id} messageId=${chunk.id}`,
+						);
+					}
+				},
+			).catch((err: unknown) => {
+				const msg = err instanceof Error ? err.message : String(err);
 				// eslint-disable-next-line no-console
 				console.warn(
-					`[cursor-remote][realtime] agent:inject failed id=${socket.id} reason=${outcome.reason} ${detail}`,
+					`[cursor-remote][realtime] agent:stream error id=${socket.id} ${msg}`,
 				);
 			});
 		});

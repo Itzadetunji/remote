@@ -18,6 +18,8 @@ final class HomeViewModel: ObservableObject {
   private let pairedConnectionStore: PairedConnectionStore
   private var cancellables = Set<AnyCancellable>()
   private let realtimeSocketService: RealtimeSocketService
+  /// Avoids double-connect: `init` already connects when pairing is persisted.
+  private var didProcessFirstBecomeActive = false
 
   var isConnected: Bool {
     pushState.connectedComputerName != nil
@@ -80,6 +82,29 @@ final class HomeViewModel: ObservableObject {
       .store(in: &cancellables)
   }
 
+  /// Called when the app returns to the foreground so the socket can reconnect if needed.
+  func sceneDidBecomeActive() {
+    if !didProcessFirstBecomeActive {
+      didProcessFirstBecomeActive = true
+      return
+    }
+    guard pairedConnectionStore.load() != nil,
+      pushState.connectedComputerName != nil,
+      let token = pushState.deviceToken,
+      !token.isEmpty
+    else {
+      return
+    }
+    if realtimeState == .authenticated {
+      return
+    }
+    guard let paired = pairedConnectionStore.load() else { return }
+    realtimeSocketService.reconnectIfPaired(
+      pairing: paired,
+      deviceToken: token
+    )
+  }
+
   func scanPairingQR() {
     pairingError = nil
     isQRScannerPresented = true
@@ -139,36 +164,27 @@ final class HomeViewModel: ObservableObject {
   }
 
   /// Disconnect this phone from the paired server and clear local pairing state.
+  /// Local state is always cleared; a server `POST /devices/disconnect` is attempted when possible.
   func disconnect() async {
     pairingError = nil
 
-    guard let persisted = pairedConnectionStore.load() else {
-      pushState.setConnectedComputer(name: nil)
-      return
-    }
-
-    guard let deviceTokenHex = pushState.deviceToken,
+    if let persisted = pairedConnectionStore.load(),
+      let deviceTokenHex = pushState.deviceToken,
       !deviceTokenHex.isEmpty
-    else {
-      pairingError =
-        "Device toekn is missing. Restart the app and try agian"
-      return
-    }
-
-    do {
-      let removed = try await pairingClient.disconnectDevice(
-        baseURL: persisted.baseURL,
-        deviceTokenHex: deviceTokenHex
-      )
-      if !removed {
+    {
+      do {
+        let removed = try await pairingClient.disconnectDevice(
+          baseURL: persisted.baseURL,
+          deviceTokenHex: deviceTokenHex
+        )
+        if !removed {
+          pairingError =
+            "This device was not registered on the server anymore. Removed pairing on this phone only."
+        }
+      } catch {
         pairingError =
-          "Disconnect was received but this device was not found on the server."
-        pairedConnectionStore.clear()
-        return
+          "Could not reach the pairing service. Removed pairing on this device only."
       }
-    } catch {
-      pairingError = "Disconnect failed: \(error.localizedDescription)"
-      return
     }
 
     pairedConnectionStore.clear()

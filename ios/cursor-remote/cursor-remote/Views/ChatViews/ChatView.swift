@@ -12,6 +12,10 @@ struct ChatView: View {
     @Environment(\.dismiss) private var dismiss
     @FocusState private var isChatInputFocused: Bool
 
+    private var lastMessageText: String? {
+        viewModel.chatMessages.last?.text
+    }
+
     var body: some View {
         GeometryReader { geo in
             ScrollViewReader { proxy in
@@ -22,7 +26,7 @@ struct ChatView: View {
                                 "No messages yet",
                                 systemImage: "bubble.left.and.bubble.right",
                                 description: Text(
-                                    "Send a message below. It appears here right away and is printed on the Mac service log."
+                                    "Send a message below. It is injected into Cursor on your Mac; the assistant reply streams back here."
                                 )
                             )
                             .frame(maxWidth: .infinity, minHeight: geo.size.height * 0.35)
@@ -43,11 +47,10 @@ struct ChatView: View {
                     .padding(.vertical, 12)
                 }
                 .onChange(of: viewModel.chatMessages.count) { _, _ in
-                    if let last = viewModel.chatMessages.last {
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
-                    }
+                    scrollToBottom(proxy: proxy)
+                }
+                .onChange(of: lastMessageText) { _, _ in
+                    scrollToBottom(proxy: proxy)
                 }
             }
             .contentShape(Rectangle())
@@ -76,29 +79,65 @@ struct ChatView: View {
         .background(Color(uiColor: .systemBackground))
         .navigationBarBackButtonHidden(true)
     }
+
+    private func scrollToBottom(proxy: ScrollViewProxy) {
+        if let last = viewModel.chatMessages.last {
+            withAnimation(.easeOut(duration: 0.2)) {
+                proxy.scrollTo(last.id, anchor: .bottom)
+            }
+        }
+    }
 }
 
+/// Role labels and alignment echo len-cursor Telegram formatting (You: / assistant body).
 private struct ChatBubbleRow: View {
     let message: RealtimeMessage
 
     var body: some View {
-        HStack {
+        HStack(alignment: .top, spacing: 0) {
             if message.isOutbound {
-                Spacer(minLength: 48)
-            }
-            Text(message.text)
-                .font(.body)
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(message.isOutbound
-                            ? Color.accentColor.opacity(0.22)
-                            : Color(uiColor: .secondarySystemFill))
+                Spacer(minLength: 40)
+                VStack(alignment: .trailing, spacing: 6) {
+                    Text("You")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                    Text(message.text)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.trailing)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background {
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(Color.accentColor.opacity(0.2))
+                        }
                 }
-            if !message.isOutbound {
-                Spacer(minLength: 48)
+            } else {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        Text("Assistant")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                        if message.isStreaming {
+                            ProgressView()
+                                .scaleEffect(0.85)
+                        }
+                    }
+                    Text(message.text)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.leading)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background {
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(Color(uiColor: .secondarySystemFill))
+                        }
+                }
+                Spacer(minLength: 40)
             }
         }
     }

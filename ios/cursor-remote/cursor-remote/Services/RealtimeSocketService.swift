@@ -170,21 +170,37 @@ final class RealtimeSocketService: ObservableObject {
                 payload["createdAt"] as? Double ?? Date()
                 .timeIntervalSince1970 * 1000
             let createdAt = Date(timeIntervalSince1970: createdAtMs / 1000)
+            let done = (payload["done"] as? Bool) ?? true
+            let isStreaming = !done
 
-                self.messages.append(
-                    RealtimeMessage(
-                        id: id,
-                        text: text,
-                        conversationId: conversationId,
-                        createdAt: createdAt,
-                        isOutbound: false
-                    )
-                )
+            let incoming = RealtimeMessage(
+                id: id,
+                text: text,
+                conversationId: conversationId,
+                createdAt: createdAt,
+                isOutbound: false,
+                isStreaming: isStreaming
+            )
+
+            if let idx = self.messages.firstIndex(where: { $0.id == id }) {
+                self.messages[idx] = incoming
+            } else {
+                self.messages.append(incoming)
+            }
         }
 
         client.connect()
     }
+
+    /// Tears down the socket and opens a fresh connection (e.g. after returning from background).
+    func reconnectIfPaired(pairing: PairedConnection, deviceToken: String) {
+        disconnect()
+        connect(pairing: pairing, deviceToken: deviceToken)
+    }
+
     func disconnect() {
+        currentPairing = nil
+        currentDeviceToken = nil
         socket?.disconnect()
         socket?.removeAllHandlers()
         socket = nil
@@ -241,4 +257,6 @@ struct RealtimeMessage: Identifiable, Equatable {
     let createdAt: Date
     /// `true` for messages typed on this device; `false` for `message:receive` from the server.
     var isOutbound: Bool = false
+    /// Assistant reply still updating (`done` was false on the socket payload).
+    var isStreaming: Bool = false
 }

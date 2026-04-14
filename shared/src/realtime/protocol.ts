@@ -39,4 +39,6 @@ export type MessageReceivePayload = {
 	text: string;
 	conversationId: string;
 	createdAt: number;
+	/** When false, the assistant is still streaming into this message. Omitted or true = final. */
+	done?: boolean;
 };

@@ -90,42 +90,56 @@ function buildFocusExpression(strategies: string[]): string {
 `;
 }
 
-export async function sendTextToCursorComposer(
+/** Connects to the workbench page WebSocket (caller must `disconnect()`). */
+export async function createConnectedWorkbenchClient(
 	cdpUrl: string,
-	text: string,
-): Promise<void> {
+): Promise<CdpWebSocketClient> {
 	const targets = await fetchCdpTargets(cdpUrl);
 	const wsUrl = pickPageWebSocketUrl(targets);
 	if (!wsUrl) {
 		throw new Error("No CDP page target with webSocketDebuggerUrl");
 	}
-
 	const client = new CdpWebSocketClient();
+	await client.connect(wsUrl);
+	return client;
+}
+
+/**
+ * Focus composer, clear, insert text, Enter — len-cursor CommandExecutor sequence.
+ * Client must already be connected to the workbench target.
+ */
+export async function runComposerSend(
+	client: CdpWebSocketClient,
+	text: string,
+): Promise<void> {
+	const focusResult = (await client.evaluate(
+		buildFocusExpression(CHAT_INPUT_SELECTOR_STRATEGIES),
+	)) as { ok?: boolean; error?: string; info?: string } | null;
+
+	if (!focusResult?.ok) {
+		throw new Error(focusResult?.error ?? "Failed to focus chat input");
+	}
+
+	await sleep(FOCUS_DELAY_MS);
+
+	await client.pressKey("a", "KeyA", 65, 2);
+	await sleep(KEY_DELAY_MS);
+	await client.pressKey("Backspace", "Backspace", 8);
+	await sleep(KEY_DELAY_MS);
+
+	await client.typeText(text);
+	await sleep(BEFORE_ENTER_MS);
+
+	await client.pressKey("Enter", "Enter", 13);
+}
+
+export async function sendTextToCursorComposer(
+	cdpUrl: string,
+	text: string,
+): Promise<void> {
+	const client = await createConnectedWorkbenchClient(cdpUrl);
 	try {
-		await client.connect(wsUrl);
-
-		const focusResult = (await client.evaluate(
-			buildFocusExpression(CHAT_INPUT_SELECTOR_STRATEGIES),
-		)) as { ok?: boolean; error?: string; info?: string } | null;
-
-		if (!focusResult?.ok) {
-			throw new Error(
-				focusResult?.error ?? "Failed to focus chat input",
-			);
-		}
-
-		await sleep(FOCUS_DELAY_MS);
-
-		// Clear existing composer text (len-cursor command-executor)
-		await client.pressKey("a", "KeyA", 65, 2);
-		await sleep(KEY_DELAY_MS);
-		await client.pressKey("Backspace", "Backspace", 8);
-		await sleep(KEY_DELAY_MS);
-
-		await client.typeText(text);
-		await sleep(BEFORE_ENTER_MS);
-
-		await client.pressKey("Enter", "Enter", 13);
+		await runComposerSend(client, text);
 	} finally {
 		client.disconnect();
 	}
